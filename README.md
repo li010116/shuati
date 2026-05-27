@@ -181,6 +181,48 @@ pm2 startup
 
 ---
 
+### 💡 PM2 常用运维管理命令
+
+在服务器日常维护中，您可能需要对进程进行重启、查看日志或停止操作。以下是 PM2 最常用的运维指令：
+
+#### 1. 状态查看与监控
+```bash
+# 查看所有正在运行的 PM2 应用列表（包含 CPU、内存、状态等占用情况）
+pm2 list
+
+# 实时仪表盘监控（查看更精细的 CPU、内存和日志流，非常酷炫）
+pm2 monit
+
+# 查看特定应用的详细配置与元信息
+pm2 show interview-companion
+```
+
+#### 2. 进程控制
+```bash
+# 重新启动应用（当您更新了 .env 配置或数据库后触发）
+pm2 restart interview-companion
+
+# 停止应用（不删除守护列表）
+pm2 stop interview-companion
+
+# 从 PM2 托管列表中彻底删除该应用
+pm2 delete interview-companion
+```
+
+#### 3. 运维日志查看 (最常用)
+```bash
+# 实时滚动查看最新的核心系统日志与报错
+pm2 logs interview-companion
+
+# 仅查看最后 100 行日志
+pm2 logs interview-companion --lines 100
+
+# 清空历史日志缓存文件
+pm2 flush
+```
+
+---
+
 ### Step 8. 配置 Nginx 实现外网域名/端口安全分发
 生产环境建议在上层部署 Nginx 反向代理，将外网对 `80` (HTTP) 或 `443` (HTTPS) 端口的网页请求平滑转发至内网 `3000` 端口。
 
@@ -227,5 +269,111 @@ sudo nginx -t
 # 热重启 Nginx 服务使配置彻底生效
 sudo systemctl restart nginx
 ```
+
+---
+
+### Step 9. 配置 SSL 安全证书 (HTTPS)
+
+为了保障刷题过程中传输数据的保密性并提升品牌形象，强烈建议为您的域名配置 SSL 证书。以下为您提供两种最主流的配置方案：
+
+#### 方案 A：使用 Let's Encrypt 自动申请和维护（推荐，免费且全自动）
+使用 `Certbot` 客户端，您可以一键申请免费的 SSL 证书，它会自动识别您的 Nginx 配置、注入密匙，并配置 90 天自动后台续期。
+
+1. **安装 Certbot 客户端**：
+   ```bash
+   sudo apt-get update
+   sudo apt-get install -y certbot python3-certbot-nginx
+   ```
+
+2. **一键获取并自动配置证书**（将 `your-domain.com` 替换为您的真实域名）：
+   ```bash
+   sudo certbot --nginx -d your-domain.com -d www.your-domain.com
+   ```
+   *执行过程中，会提示您输入邮箱（用来接收证书过期警告）、接受服务条款、并选择是否**自动将所有 HTTP 流量强制重定向到 HTTPS**（推荐选择此项，即输入 `2` 或选择 Redirect）。*
+
+3. **测试自动续期任务是否工作正常**：
+   ```bash
+   sudo certbot renew --dry-run
+   ```
+
+---
+
+#### 方案 B：使用腾讯云 SSL 证书手动配置（参考腾讯云官方文档 Nginx SSL 配置）
+如果您在腾讯云（或其他云服务商）申请并下载了适用于 Nginx 服务的 SSL 证书包，您会获得一个 ZIP 压缩包，解压后包含以下核心文件：
+- `your-domain.com_bundle.crt`（证书文件，包含完整证书链）
+- `your-domain.com.key`（私钥文件）
+
+请按照以下步骤，参考 **[腾讯云官方 Nginx SSL 证书配置指南](https://cloud.tencent.com/document/product/400/35244)** 进行手动部署：
+
+1. **将证书文件上传到服务器指定安全目录**：
+   ```bash
+   sudo mkdir -p /etc/nginx/ssl
+   # 将已解压的 your-domain.com_bundle.crt 和 your-domain.com.key 手动安全上传/移动至该目录下
+   # 并设定安全访问权限
+   sudo chmod 600 /etc/nginx/ssl/*
+   ```
+
+2. **使用文本编辑器（如 vim 或 nano）编辑您的 Nginx 站点配置文件** /etc/nginx/sites-available/default：
+   ```bash
+   sudo nano /etc/nginx/sites-available/default
+   ```
+   **根据腾讯云官方标准，填入以下优化的双站点配置定义（支持 HTTP 自动重定向至 HTTPS，并适配 Next.js 反向代理）：**
+   ```nginx
+   # 1. 强制将所有 HTTP 80 端口流量永久重定向至安全加密的 HTTPS
+   server {
+       # SSL 证书绑定域名
+       listen 80;
+       server_name your-domain.com www.your-domain.com; # 替换为您的真实域名
+       
+       # 腾讯云官方推荐的 HTTP 重定向 HTTPS 机制
+       return 301 https://$host$request_uri;
+   }
+
+   # 2. HTTPS 443 安全接收与反向代理端
+   server {
+       # 腾讯云建议：同时监听 443 端口并开启 SSL 加密
+       listen 443 ssl;
+       server_name your-domain.com www.your-domain.com; # 替换为您的真实域名
+
+       # 放宽 Excel 题库大包上传容量限制
+       client_max_body_size 50m;
+
+       # 腾讯云证书物理文件绝对定位
+       ssl_certificate /etc/nginx/ssl/your-domain.com_bundle.crt; # 证书文件路径
+       ssl_certificate_key /etc/nginx/ssl/your-domain.com.key;     # 私钥文件路径
+
+       # 腾讯云官方推荐的安全优化参数
+       ssl_session_timeout 5m;                                    # 会话超时时间
+       ssl_protocols TLSv1.2 TLSv1.3;                             # 开启安全协议版本
+       ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:HIGH:!aNULL:!MD5:!RC4:!DHE; # 配置加密套件
+       ssl_prefer_server_ciphers on;                              # 优先使用服务器端的加密套件
+
+       location / {
+           # 将外网请求安全、高保真转发到本地 PM2 运行的 NextJS 内网 3000 端口
+           proxy_pass http://127.0.0.1:3000;
+           
+           # 协议升级与标准反代包头配置
+           proxy_http_version 1.1;
+           proxy_set_header Upgrade $http_upgrade;
+           proxy_set_header Connection 'upgrade';
+           proxy_set_header Host $host;
+           proxy_cache_bypass $http_upgrade;
+           proxy_set_header X-Real-IP $remote_addr;
+           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+           proxy_set_header X-Forwarded-Proto https; # 明确通知 Next.js 上层服务已开启 HTTPS
+       }
+   }
+   ```
+
+3. **保存配置并测试、重载 Nginx 服务**：
+   ```bash
+   # 1. 检查修改后的配置文件语法是否完整正确
+   sudo nginx -t
+
+   # 2. 如果显示 successful，直接热加载 Nginx 使证书与站点立即生效
+   sudo systemctl reload nginx
+   ```
+
+---
 
 至此，大功告成！您现在可以在浏览器中输入服务器域名或公网外网 IP，即可享受本应用提供的高效刷题、轻松背题和完美的双向数据备份与恢复体验！
