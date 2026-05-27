@@ -117,7 +117,7 @@ export default function QuestionsPage() {
 
   // Run whenever search parameters shift
   useEffect(() => {
-    loadQuestions(1);
+    loadQuestions(page);
   }, [
     selectedBankId,
     primaryCategory,
@@ -133,7 +133,11 @@ export default function QuestionsPage() {
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    loadQuestions(1);
+    if (page === 1) {
+      loadQuestions(1);
+    } else {
+      setPage(1);
+    }
   };
 
   const handleResetFilters = () => {
