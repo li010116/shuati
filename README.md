@@ -71,78 +71,143 @@
 
 ---
 
-## 🌐 Linux 生产环境部署指南 (PM2 + Nginx)
+## 🌐 生产环境极速部署指南 (从零拉取到正式上线)
 
-在 Linux 服务器（如 Ubuntu/CentOS）上部署本系统的标准生产环境推荐步骤如下：
+本指南针对标准的 Linux 服务器（如 Ubuntu/Debian/CentOS），手把手教您如何从零拉取代码，一直配置到搭载 PM2 守护以及 Nginx 反向代理。
 
-### 1. 安装基础运行环境
-确保系统已安装 Node.js (推荐 v18 或更高版本) 进程管理器 `pm2`：
+---
+
+### Step 1. 拉取代码 (Code Cloning)
+首先，通过 SSH 终端进入您指定的服务器目录，执行以下命令将项目代码拉取到本地：
 ```bash
-# 安装 Node.js (以 Ubuntu NVM 为例，或通过 NodeSource 安装)
+# 1. 切换到您存放 Web 服务的根目录下
+cd /var/www
+
+# 2. 从 Git 仓库克隆本项目代码
+git clone https://github.com/li010116/shuati.git
+
+# 3. 进入项目根目录下
+cd shuati
+```
+
+---
+
+### Step 2. 安装 Node.js 与 PM2 进程管理器
+Next.js 15 推荐使用 **Node.js v18 或更高版本**。我们通过标准包管理器或 NVM 进行安装：
+
+#### 在 Ubuntu/Debian 系统中：
+```bash
+# 导入 NodeSource 官方 v18.x 源
 curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+
+# 运行系统级 Node.JS 快速安装
 sudo apt-get install -y nodejs
 
-# 全局安装进程守护工具 pm2
+# 检查当前安装的版本号是否正确
+node -v
+npm -v
+```
+
+#### 全局安装 PM2 服务守护进程：
+```bash
+# PM2 可以保障您的 Next.js 进程在关闭终端、崩溃、或服务器意外重启时自动拉起
 sudo npm install -g pm2
 ```
 
-### 2. 配置物理环境与密钥
-克隆文件夹或上传项目打包产物至服务器，并在项目根目录下建立 `.env` 配置文件：
-```bash
-# 拷贝模板
-cp .env.example .env
-```
-用编辑器编辑 `.env` 并在其中填入您的特定密钥：
-```env
-# 你的 Gemini API 密钥 (用于 AI 辅学助手，如不使用则留空)
-GEMINI_API_KEY=your-gemini-key
+---
 
-# 本地 SQLite 默认路径 (生产环境通常保持默认 file:./dev.db)
+### Step 3. 创建物理环境变量配置文件 (.env)
+复制系统提供的 `.env.example` 环境变量模板，并填入您的相关配置：
+```bash
+# 复制示例模板
+cp .env.example .env
+
+# 使用 vim 或 nano 进行快捷编辑
+nano .env
+```
+在 `.env` 文件内填入以下核心内容并保存：
+```env
+# 1. 您的高级 AI 助理 Gemini API Key (用于刷题详情页的 AI 辅导与解析)
+GEMINI_API_KEY="your-gemini-key-here"
+
+# 2. 本地轻量级无服务器 SQLite 数据库物理定位 (使用相对路径存储在 prisma 目录下即可)
 DATABASE_URL="file:./dev.db"
 ```
 
-### 3. 安装依赖与编译打包 (Production Build)
+---
+
+### Step 4. 安全载入依赖包 (Dependencies Installation)
+在项目根目录中，载入 Next.js 构建和 SQLite 通信所需的必要 NPM 模块：
 ```bash
-# 安装生产依赖
-npm ci --only=production
-# *注意：如果是全流程构建，可先进行完整编译*
+# 在生产环境下提效，建议直接执行 ci。如果开发调试请直接运行 npm install
 npm install
-
-# 初始化生成本地 SQLite 数据库及映射文件
-npx prisma db push
-
-# 进行 Next.js 生产包编译
-npm run build
 ```
 
-### 4. 使用 PM2 启动和守护进程
-在生产环境中，Next.js 服务需要于后台持续执行，推荐使用 `pm2` 进行生命周期托管：
-```bash
-# 使用 PM2 运行生产服务器，项目命名为 interview-app
-pm2 start npm --name "interview-app" -- run start -- -p 3000
+---
 
-# 检查当前进程状态
+### Step 5. 自动合成并映射 SQLite 本地数据库 (Prisma Push)
+SQLite 是基于本地单一物理文件运转的特型绿色数据库，不需要您单独在操作系统安装任何外部 MySQL 或守护服务。我们通过 Prisma schema 自动一键高保真重建数据表：
+```bash
+# 依据 prisma/schema.prisma 快速渲染并生成物理数据库 dev.db 实体
+npx prisma db push
+```
+*(如果该步骤输出：✔ Generated Prisma Client 并且 SQLite database created at ... 即代表本地数据库管道完全接通！)*
+
+---
+
+### Step 6. Next.js 生产环境打包编译 (Production Build)
+运行打包指令对页面、路由进行极致优化和动静结合代码压缩：
+```bash
+# 开始执行 NextJS 编译主任务
+npm run build
+```
+*(编译成功后会在根目录下产生打包产物，可以安心在独立生产端高保真还原。)*
+
+---
+
+### Step 7. 利用 PM2 挂载后台长时守护
+千万不要在终端直接运行 `npm run dev` 或者是 `npm start` 挂载，因为这样在断开终端后网站就会断联。推荐使用 PM2 注册后台托管：
+```bash
+# 在后台将程序命名为 "interview-companion" 并在 3000 端口持续监听运行
+pm2 start npm --name "interview-companion" -- run start -- -p 3000
+
+# 观察当前后台服务列表状态，确认 Status 为 online 状态
 pm2 list
 
-# 如果需要设置开机自启守护
+# 让 PM2 托管自启动。这样在服务器断电重新开机时，服务也会毫秒级自动带起
 pm2 save
 pm2 startup
 ```
 
-### 5. 配置 Nginx 端口转发
-为通过标准的 `80` (HTTP) 或 `443` (HTTPS) 端口访问应用，推荐在其上层挂载 Nginx 反向代理。
+---
 
-编辑您的 Nginx 站点配置文件 (例如 `/etc/nginx/sites-available/default`)：
+### Step 8. 配置 Nginx 实现外网域名/端口安全分发
+生产环境建议在上层部署 Nginx 反向代理，将外网对 `80` (HTTP) 或 `443` (HTTPS) 端口的网页请求平滑转发至内网 `3000` 端口。
+
+#### 1. 安装 Nginx 
+```bash
+sudo apt-get install -y nginx
+```
+
+#### 2. 修改默认站点配置文件
+编辑虚拟主机配置文件（例如 `/etc/nginx/sites-available/default`）：
+```bash
+sudo nano /etc/nginx/sites-available/default
+```
+在 Server 节点内部填入以下精准路由转发定义：
 ```nginx
 server {
     listen 80;
-    server_name your_domain_or_ip; # 您的域名或服务器公网 IP
+    server_name your-domain.com www.your-domain.com; # 填入您的申请域名或者外网公网 IP
 
-    # 如果有大文件导入需要，建议放宽上传包限制
+    # 放宽 Excel 题库大包上传容量限制
     client_max_body_size 50m;
 
     location / {
+        # 顺滑转发到本地 PM2 运行的 3000 端口内网映射
         proxy_pass http://127.0.0.1:3000;
+        
+        # 完美配置协议升级 WebSocket 链路转发，保持状态通道流畅
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -153,9 +218,14 @@ server {
     }
 }
 ```
-测试配置并重起 Nginx：
+
+#### 3. 校验并热重载 Nginx 服务
 ```bash
+# 检验语法是否有误
 sudo nginx -t
+
+# 热重启 Nginx 服务使配置彻底生效
 sudo systemctl restart nginx
 ```
-此时即可通过外网安全、稳定、流畅地访问您的极速面试刷题应用！
+
+至此，大功告成！您现在可以在浏览器中输入服务器域名或公网外网 IP，即可享受本应用提供的高效刷题、轻松背题和完美的双向数据备份与恢复体验！
