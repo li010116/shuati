@@ -1,0 +1,6 @@
+{
+  "name": "面试刷题应用",
+  "description": "支持多题库管理、Excel导入、背题/刷题模式、错题本与收藏夹的智能面试刷题系统",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

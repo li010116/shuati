@@ -1,0 +1,69 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model QuestionBank {
+  id           Int           @id @default(autoincrement())
+  name         String
+  description  String?
+  sourceFile   String?
+  totalCount   Int           @default(0)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  questions    Question[]
+  importBatches ImportBatch[]
+}
+
+model ImportBatch {
+  id             Int          @id @default(autoincrement())
+  questionBankId Int
+  fileName       String
+  totalCount     Int
+  successCount   Int
+  failCount      Int
+  errorMessage   String?
+  createdAt      DateTime     @default(now())
+  questionBank   QuestionBank @relation(fields: [questionBankId], references: [id], onDelete: Cascade)
+}
+
+model Question {
+  id                Int            @id @default(autoincrement())
+  questionBankId    Int
+  questionId        String
+  primaryCategory   String
+  secondaryCategory String?
+  title             String
+  answer            String?
+  questionType      String         @default("问答题")
+  importance        String         @default("普通")
+  difficulty        String         @default("普通")
+  tags              String?
+  sourcePage        String?
+  masteryStatus     String         @default("未学习")
+  isFavorite        Boolean        @default(false)
+  wrongCount        Int            @default(0)
+  reviewCount       Int            @default(0)
+  lastReviewTime    DateTime?
+  note              String?
+  isAnswerMissing   Boolean        @default(false)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  questionBank      QuestionBank   @relation(fields: [questionBankId], references: [id], onDelete: Cascade)
+  reviewRecords     ReviewRecord[]
+
+  @@unique([questionBankId, questionId])
+}
+
+model ReviewRecord {
+  id            Int      @id @default(autoincrement())
+  questionId    Int
+  actionType    String
+  masteryStatus String?
+  createdAt     DateTime @default(now())
+  question      Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+}
