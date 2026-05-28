@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Layout } from "@/components/Layout";
 import { questionBankApi, QuestionBank } from "@/src/api/questionBankApi";
-import { importApi, ImportResponseData } from "@/src/api/importApi";
+import { importApi, ImportResponseData, ProgressData } from "@/src/api/importApi";
 import { statisticsApi, ImportBatch } from "@/src/api/statisticsApi";
 import {
   UploadCloud,
@@ -43,8 +43,28 @@ export default function ImportPage() {
   const [selectedBankId, setSelectedBankId] = useState<string>("");
   const [existingFile, setExistingFile] = useState<File | null>(null);
 
+  // Progress monitoring values
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [progress, setProgress] = useState<ProgressData | null>(null);
+
   // Results output panel state
   const [result, setResult] = useState<ImportResponseData | null>(null);
+
+  const pollProgress = async (uuid: string): Promise<ProgressData | null> => {
+    try {
+      const data = await importApi.getProgress(uuid);
+      setProgress(data);
+      if (data.status === "completed" || data.status === "failed") {
+        return data;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 350));
+      return pollProgress(uuid);
+    } catch (err) {
+      console.error("Polling progress failure (will retry):", err);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      return pollProgress(uuid);
+    }
+  };
 
   const loadData = async () => {
     try {
@@ -91,13 +111,36 @@ export default function ImportPage() {
     e.preventDefault();
     if (!newName.trim() || !newFile) return;
 
+    // Generate a unique client-side Job ID
+    const uuid = "job_new_" + Date.now() + "_" + Math.random().toString(36).substring(2, 9);
+
     try {
       setImporting(true);
       setError("");
       setMessage("");
       setResult(null);
+      setJobId(uuid);
+      setProgress({
+        jobId: uuid,
+        fileName: newFile.name,
+        questionBankId: 0,
+        totalRows: 0,
+        processedRows: 0,
+        successCount: 0,
+        createdCount: 0,
+        updatedCount: 0,
+        failCount: 0,
+        status: "pending",
+        statusText: "正在建立题库目录并上传 Excel...",
+        errors: [],
+      });
 
-      const res = await importApi.importNewBank(newName, newDesc, newFile);
+      // Start polling in parallel with the upload POST
+      const pollPromise = pollProgress(uuid);
+      const uploadPromise = importApi.importNewBank(newName, newDesc, newFile, uuid);
+
+      const [res] = await Promise.all([uploadPromise, pollPromise]);
+
       setResult(res);
       setMessage(`恭喜！全新题库建仓及数据导入圆满成功。成功加载了 ${res.successCount} 道题目！`);
       
@@ -112,6 +155,8 @@ export default function ImportPage() {
       setError(err.message || "新建并导入Excel失败");
     } finally {
       setImporting(false);
+      setJobId(null);
+      setProgress(null);
     }
   };
 
@@ -119,14 +164,37 @@ export default function ImportPage() {
     e.preventDefault();
     if (!selectedBankId || !existingFile) return;
 
+    const parsedId = parseInt(selectedBankId, 10);
+    // Generate a unique client-side Job ID
+    const uuid = "job_exist_" + Date.now() + "_" + Math.random().toString(36).substring(2, 9);
+
     try {
       setImporting(true);
       setError("");
       setMessage("");
       setResult(null);
+      setJobId(uuid);
+      setProgress({
+        jobId: uuid,
+        fileName: existingFile.name,
+        questionBankId: parsedId,
+        totalRows: 0,
+        processedRows: 0,
+        successCount: 0,
+        createdCount: 0,
+        updatedCount: 0,
+        failCount: 0,
+        status: "pending",
+        statusText: "准备进行 Excel 大文件覆写合并...",
+        errors: [],
+      });
 
-      const parsedId = parseInt(selectedBankId, 10);
-      const res = await importApi.importExistingBank(parsedId, existingFile);
+      // Start polling in parallel with the upload POST
+      const pollPromise = pollProgress(uuid);
+      const uploadPromise = importApi.importExistingBank(parsedId, existingFile, uuid);
+
+      const [res] = await Promise.all([uploadPromise, pollPromise]);
+
       setResult(res);
       setMessage(`合并动作已执行完毕。往已有题库中成功归入 ${res.successCount} 道记录。`);
       
@@ -139,6 +207,8 @@ export default function ImportPage() {
       setError(err.message || "合入已有题库失败，请校验数据列");
     } finally {
       setImporting(false);
+      setJobId(null);
+      setProgress(null);
     }
   };
 
@@ -326,6 +396,71 @@ export default function ImportPage() {
 
           {/* Right Column: Importing feedback details or Batch log grids */}
           <div className="lg:col-span-5 space-y-4">
+            {/* Realtime progress tracker */}
+            {importing && progress && (
+              <div className="bg-white rounded-xl border border-neutral-200 p-5 shadow-xs space-y-4 animate-fadeIn">
+                <h3 className="text-xs font-bold text-neutral-400 uppercase tracking-wider flex items-center gap-1.5 pb-2 border-b">
+                  <span className="w-2 h-2 rounded-full bg-blue-600 animate-ping shrink-0" />
+                  <span>Excel 极速解析入库进度</span>
+                </h3>
+
+                <div className="space-y-1">
+                  <div className="flex justify-between text-xs">
+                    <span className="font-semibold text-neutral-700 truncate max-w-[200px]" title={progress.fileName}>
+                      {progress.fileName}
+                    </span>
+                    <span className="font-mono font-bold text-blue-600">
+                      {progress.totalRows > 0 ? Math.round((progress.processedRows / progress.totalRows) * 100) : 0}%
+                    </span>
+                  </div>
+
+                  {/* Modern smooth progress bar */}
+                  <div className="w-full bg-neutral-100 rounded-full h-2 overflow-hidden shadow-inner">
+                    <div
+                      className="bg-blue-600 h-2 rounded-full transition-all duration-300 ease-out"
+                      style={{
+                        width: `${progress.totalRows > 0 ? Math.round((progress.processedRows / progress.totalRows) * 100) : 0}%`
+                      }}
+                    />
+                  </div>
+
+                  <p className="text-[11px] text-neutral-500 font-medium pt-1">
+                    {progress.statusText}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 pt-1">
+                  <div className="bg-neutral-50 p-2.5 rounded-lg text-center border">
+                    <span className="text-[9px] text-neutral-400 block font-medium">Excel 行数</span>
+                    <span className="text-sm font-bold text-neutral-700 block mt-0.5">{progress.totalRows}</span>
+                  </div>
+                  <div className="bg-neutral-50 p-2.5 rounded-lg text-center border">
+                    <span className="text-[9px] text-neutral-400 block font-medium">已检查校验</span>
+                    <span className="text-sm font-bold text-blue-600 block mt-0.5">{progress.processedRows}</span>
+                  </div>
+                  <div className="bg-emerald-50/50 p-2.5 rounded-lg text-center border border-emerald-100">
+                    <span className="text-[9px] text-emerald-600 block font-medium">成功解析量</span>
+                    <span className="text-sm font-bold text-emerald-800 block mt-0.5">{progress.successCount}</span>
+                  </div>
+                  <div className="bg-rose-50/50 p-2.5 rounded-lg text-center border border-rose-100">
+                    <span className="text-[9px] text-rose-600 block font-medium">验证错误量</span>
+                    <span className="text-sm font-bold text-rose-800 block mt-0.5">{progress.failCount}</span>
+                  </div>
+                </div>
+
+                {progress.errors.length > 0 && (
+                  <div className="space-y-1">
+                    <span className="text-[9px] font-bold text-neutral-400 block">实时验证故障提醒 ({progress.failCount})</span>
+                    <div className="max-h-24 overflow-y-auto bg-stone-50 border p-2 rounded-lg text-[9px] font-mono text-rose-600 space-y-0.5">
+                      {progress.errors.slice(-3).map((err, idx) => (
+                        <p key={idx} className="truncate">{err}</p>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Realtime results feedback panels */}
             {result && (
               <div className="bg-white rounded-xl border border-neutral-200 p-5 shadow-xs space-y-4 animate-fadeIn">

@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Layout } from "@/components/Layout";
 import { questionBankApi, QuestionBank } from "@/src/api/questionBankApi";
-import { importApi, ImportResponseData } from "@/src/api/importApi";
+import { importApi, ImportResponseData, ProgressData } from "@/src/api/importApi";
 import { statisticsApi, StatOverview } from "@/src/api/statisticsApi";
 import { backupApi } from "@/src/api/backupApi";
 import {
@@ -49,6 +49,26 @@ export default function QuestionBanksPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [importResult, setImportResult] = useState<ImportResponseData | null>(null);
+
+  // Progress monitoring values
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [progress, setProgress] = useState<ProgressData | null>(null);
+
+  const pollProgress = async (uuid: string): Promise<ProgressData | null> => {
+    try {
+      const data = await importApi.getProgress(uuid);
+      setProgress(data);
+      if (data.status === "completed" || data.status === "failed") {
+        return data;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 350));
+      return pollProgress(uuid);
+    } catch (err) {
+      console.error("Polling progress failure (will retry):", err);
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      return pollProgress(uuid);
+    }
+  };
 
   // Stats drawer or item
   const [detailsBank, setDetailsBank] = useState<QuestionBank | null>(null);
@@ -157,12 +177,35 @@ export default function QuestionBanksPage() {
     e.preventDefault();
     if (!uploadBankId || !selectedFile) return;
 
+    // Generate active Job ID
+    const uuid = "job_dash_" + Date.now() + "_" + Math.random().toString(36).substring(2, 9);
+
     try {
       setUploading(true);
       setError("");
       setImportResult(null);
+      setJobId(uuid);
+      setProgress({
+        jobId: uuid,
+        fileName: selectedFile.name,
+        questionBankId: uploadBankId,
+        totalRows: 0,
+        processedRows: 0,
+        successCount: 0,
+        createdCount: 0,
+        updatedCount: 0,
+        failCount: 0,
+        status: "pending",
+        statusText: "正在上传并检测数据格式...",
+        errors: [],
+      });
 
-      const res = await importApi.importExistingBank(uploadBankId, selectedFile);
+      // Parallelize progress checks with the upload submit
+      const pollPromise = pollProgress(uuid);
+      const uploadPromise = importApi.importExistingBank(uploadBankId, selectedFile, uuid);
+
+      const [res] = await Promise.all([uploadPromise, pollPromise]);
+
       setImportResult(res);
       setMessage(`追加Excel到题库完成！成功导入 ${res.successCount} 道。`);
       loadData();
@@ -170,6 +213,8 @@ export default function QuestionBanksPage() {
       setError(err.message || "导入题库失败");
     } finally {
       setUploading(false);
+      setJobId(null);
+      setProgress(null);
     }
   };
 
@@ -461,6 +506,37 @@ export default function QuestionBanksPage() {
                     {uploading ? "正在极速导入解析..." : "立即追加合并题目"}
                   </button>
                 </form>
+
+                {uploading && progress && (
+                  <div className="bg-neutral-50 p-4 border border-neutral-200 rounded-lg text-xs space-y-3 animate-fadeIn">
+                    <div className="flex justify-between font-semibold">
+                      <span className="truncate max-w-[150px] text-neutral-700">{progress.fileName}</span>
+                      <span className="text-indigo-600 font-mono font-bold">
+                        {progress.totalRows > 0 ? Math.round((progress.processedRows / progress.totalRows) * 100) : 0}%
+                      </span>
+                    </div>
+
+                    <div className="w-full bg-neutral-200 rounded-full h-1.5 overflow-hidden shadow-inner">
+                      <div
+                        className="bg-indigo-600 h-1.5 rounded-full transition-all duration-300"
+                        style={{
+                          width: `${progress.totalRows > 0 ? Math.round((progress.processedRows / progress.totalRows) * 100) : 0}%`
+                        }}
+                      />
+                    </div>
+
+                    <p className="text-[10px] text-neutral-500 font-medium">
+                      {progress.statusText}
+                    </p>
+
+                    <div className="grid grid-cols-2 gap-2 text-[10px] bg-white p-2.5 rounded-md border text-neutral-600 font-medium text-center">
+                      <div>总数: <span className="font-bold text-neutral-800">{progress.totalRows}</span></div>
+                      <div>校验: <span className="font-bold text-indigo-600">{progress.processedRows}</span></div>
+                      <div>成功: <span className="font-bold text-emerald-600">{progress.successCount}</span></div>
+                      <div>失败: <span className="font-bold text-rose-500">{progress.failCount}</span></div>
+                    </div>
+                  </div>
+                )}
 
                 {importResult && (
                   <div className="bg-emerald-50 text-emerald-800 p-4 rounded-lg text-xs space-y-1">

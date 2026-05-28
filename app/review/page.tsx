@@ -267,8 +267,8 @@ export default function ReviewPage() {
                     <div className="flex items-center gap-1.5 text-[10.5px]">
                       <span className="text-neutral-400">库门: {q.questionBank?.name || "综合库"}</span>
                       <span className="text-neutral-300">|</span>
-                      <span className={`px-1.5 rounded-sm font-bold ${
-                        q.difficulty === "困难" ? "text-rose-600 bg-rose-50" : "text-emerald-600 bg-emerald-50"
+                      <span className={`px-1.5 py-0.5 rounded border font-bold ${
+                        q.difficulty === "困难" ? "text-rose-700 bg-rose-50 border-rose-150" : q.difficulty === "简单" ? "text-emerald-700 bg-emerald-50 border-emerald-150" : "text-blue-700 bg-blue-50 border-blue-150"
                       }`}>
                         {q.difficulty}
                       </span>

@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
     const name = formData.get("name") as string;
     const description = formData.get("description") as string;
     const file = formData.get("file") as File;
+    const jobId = (formData.get("jobId") as string) || undefined;
 
     if (!name) {
       return errorResponse("新建导入时，题库名称不能为空");
@@ -53,7 +54,7 @@ export async function POST(req: NextRequest) {
     });
 
     // 3. Process the file contents using Excel importer
-    const importResult = await processExcelImport(buffer, file.name, newBank.id);
+    const importResult = await processExcelImport(buffer, file.name, newBank.id, jobId);
 
     return successResponse(importResult, "导入完成");
   } catch (err: any) {

@@ -40,11 +40,27 @@ export async function GET(req: NextRequest) {
     }
 
     if (difficulty) {
-      where.difficulty = difficulty;
+      if (difficulty === "简单") {
+        where.difficulty = { in: ["简单", "低", "低难度"] };
+      } else if (difficulty === "普通") {
+        where.difficulty = { in: ["普通", "中", "中等", "中等难度", "中难度"] };
+      } else if (difficulty === "困难") {
+        where.difficulty = { in: ["困难", "高", "高难度"] };
+      } else {
+        where.difficulty = difficulty;
+      }
     }
 
     if (importance) {
-      where.importance = importance;
+      if (importance === "普通") {
+        where.importance = { in: ["普通", "了解", "低"] };
+      } else if (importance === "重要") {
+        where.importance = { in: ["重要", "较重要", "重点"] };
+      } else if (importance === "极为重要") {
+        where.importance = { in: ["极为重要", "必会", "核心"] };
+      } else {
+        where.importance = importance;
+      }
     }
 
     if (masteryStatus) {
@@ -177,6 +193,30 @@ export async function POST(req: NextRequest) {
 
     const isAnswerMissing = !answer;
 
+    const importanceVal = importance || "普通";
+    let qImportance = "普通";
+    if (importanceVal === "了解" || importanceVal === "低" || importanceVal === "普通") {
+      qImportance = "普通";
+    } else if (importanceVal === "较重要" || importanceVal === "重点" || importanceVal === "重要") {
+      qImportance = "重要";
+    } else if (importanceVal === "必会" || importanceVal === "核心" || importanceVal === "极高" || importanceVal === "极为重要") {
+      qImportance = "极为重要";
+    } else {
+      qImportance = importanceVal;
+    }
+
+    const difficultyVal = difficulty || "普通";
+    let qDifficulty = "普通";
+    if (difficultyVal === "低" || difficultyVal === "低难度" || difficultyVal === "简单") {
+      qDifficulty = "简单";
+    } else if (difficultyVal === "中" || difficultyVal === "中等" || difficultyVal === "中等难度" || difficultyVal === "中难度" || difficultyVal === "普通") {
+      qDifficulty = "普通";
+    } else if (difficultyVal === "高" || difficultyVal === "高难度" || difficultyVal === "困难") {
+      qDifficulty = "困难";
+    } else {
+      qDifficulty = difficultyVal;
+    }
+
     const newQuestion = await prisma.question.create({
       data: {
         questionBankId: qBankId,
@@ -186,8 +226,8 @@ export async function POST(req: NextRequest) {
         title,
         answer: answer || null,
         questionType: questionType || "问答题",
-        importance: importance || "普通",
-        difficulty: difficulty || "普通",
+        importance: qImportance,
+        difficulty: qDifficulty,
         tags: tags || null,
         sourcePage: sourcePage || null,
         note: note || null,

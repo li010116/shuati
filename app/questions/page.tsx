@@ -572,8 +572,8 @@ export default function QuestionsPage() {
                         {/* Core Difficulty metadata details */}
                         <td className="px-4 py-3.5 hidden md:table-cell">
                           <div className="space-y-0.5 font-sans">
-                            <span className={`text-[10px] font-semibold px-1 rounded ${
-                              q.difficulty === "困难" ? "text-rose-600" : q.difficulty === "简单" ? "text-emerald-600" : "text-neutral-600"
+                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded border inline-block ${
+                              q.difficulty === "困难" ? "text-rose-700 bg-rose-50 border-rose-150" : q.difficulty === "简单" ? "text-emerald-700 bg-emerald-50 border-emerald-150" : "text-blue-700 bg-blue-50 border-blue-150"
                             }`}>
                               {q.difficulty}
                             </span>
@@ -661,24 +661,70 @@ export default function QuestionsPage() {
                 <span className="font-semibold text-neutral-800">{total}</span> 条
               </span>
 
-              <div className="flex items-center gap-1.5">
-                <button
-                  onClick={() => setPage((p) => Math.max(p - 1, 1))}
-                  disabled={page === 1}
-                  className="px-2.5 py-1 text-xs border rounded-lg bg-white text-neutral-600 hover:bg-neutral-50 disabled:opacity-40"
-                >
-                  <ChevronLeft className="w-3.5 h-3.5" />
-                </button>
-                <span className="text-xs font-mono">
-                  {page} / {totalPages} 页
-                </span>
-                <button
-                  onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
-                  disabled={page === totalPages}
-                  className="px-2.5 py-1 text-xs border rounded-lg bg-white text-neutral-600 hover:bg-neutral-50 disabled:opacity-40"
-                >
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
+              <div className="flex flex-wrap items-center gap-4">
+                {/* Traditional page button control */}
+                <div className="flex items-center gap-1.5">
+                  <button
+                    onClick={() => setPage((p) => Math.max(p - 1, 1))}
+                    disabled={page === 1}
+                    className="px-2.5 py-1 text-xs border border-neutral-200 rounded-lg bg-white text-neutral-600 hover:bg-neutral-50 hover:text-neutral-800 disabled:opacity-40 h-7 flex items-center justify-center transition-all cursor-pointer select-none"
+                  >
+                    <ChevronLeft className="w-3.5 h-3.5" />
+                  </button>
+                  <span className="text-[11px] font-medium px-2 py-0.5 bg-neutral-100 border border-neutral-200 rounded-md text-neutral-700 font-mono select-none">
+                    {page} / {totalPages} 页
+                  </span>
+                  <button
+                    onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+                    disabled={page === totalPages}
+                    className="px-2.5 py-1 text-xs border border-neutral-200 rounded-lg bg-white text-neutral-600 hover:bg-neutral-50 hover:text-neutral-800 disabled:opacity-40 h-7 flex items-center justify-center transition-all cursor-pointer select-none"
+                  >
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                {/* Direct Page Jumppad input */}
+                <div className="flex items-center gap-1 text-[11px] text-neutral-500">
+                  <span className="select-none">跳转至</span>
+                  <input
+                    key={page}
+                    id="pageJumpInput"
+                    type="text"
+                    pattern="[0-9]*"
+                    defaultValue={page}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        const val = (e.currentTarget as HTMLInputElement).value.replace(/[^0-9]/g, "");
+                        const targetVal = parseInt(val, 10);
+                        if (!isNaN(targetVal) && targetVal >= 1 && targetVal <= totalPages) {
+                          setPage(targetVal);
+                        } else {
+                          (e.currentTarget as HTMLInputElement).value = String(page);
+                        }
+                      }
+                    }}
+                    className="w-10 h-7 text-center bg-white border border-neutral-200 focus:border-blue-500 focus:outline-none rounded-md text-xs font-mono font-bold text-neutral-800 focus:ring-1 focus:ring-blue-100 transition-all"
+                  />
+                  <span className="select-none">页</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const inputEl = document.getElementById("pageJumpInput") as HTMLInputElement;
+                      if (inputEl) {
+                        const val = inputEl.value.replace(/[^0-9]/g, "");
+                        const targetVal = parseInt(val, 10);
+                        if (!isNaN(targetVal) && targetVal >= 1 && targetVal <= totalPages) {
+                          setPage(targetVal);
+                        } else {
+                          inputEl.value = String(page);
+                        }
+                      }
+                    }}
+                    className="h-7 px-2.5 bg-neutral-100 border border-neutral-200 hover:bg-neutral-200 hover:text-neutral-900 rounded-md text-neutral-700 transition-all shadow-xs cursor-pointer font-semibold text-[10.5px] select-none"
+                  >
+                    跳转
+                  </button>
+                </div>
               </div>
             </div>
           )}

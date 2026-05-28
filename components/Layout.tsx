@@ -48,7 +48,7 @@ export function Layout({ children }: LayoutProps) {
           <div>
             <h1 className="text-base font-semibold tracking-tight text-neutral-900 flex items-center gap-1.5">
               面试刷题宝典
-              <span className="text-[10px] font-medium bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-full border border-blue-100 flex items-center gap-0.5">
+              <span className="text-[10px] font-medium bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded-full border border-blue-100 flex items-center gap-0.5 notranslate" translate="no">
                 <Sparkles className="w-2.5 h-2.5" /> Core
               </span>
             </h1>

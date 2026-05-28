@@ -28,6 +28,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
     const formData = await req.formData();
     const file = formData.get("file") as File;
+    const jobId = (formData.get("jobId") as string) || undefined;
     if (!file) {
       return errorResponse("请通过file字段上传Excel文件");
     }
@@ -50,7 +51,7 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
     });
 
     // Run import
-    const importResult = await processExcelImport(buffer, file.name, bankId);
+    const importResult = await processExcelImport(buffer, file.name, bankId, jobId);
 
     return successResponse(importResult, "导入完成");
   } catch (err: any) {

@@ -166,13 +166,13 @@ export default function QuestionDetailPage() {
                 </div>
 
                 <div className="flex items-center gap-1 text-xs font-mono">
-                  <span className={`px-1.5 rounded font-bold ${
-                    question.difficulty === "困难" ? "text-rose-600 bg-rose-50" : "text-emerald-600 bg-emerald-50"
+                  <span className={`px-1.5 py-0.5 rounded border font-bold ${
+                    question.difficulty === "困难" ? "text-rose-700 bg-rose-50 border-rose-150" : question.difficulty === "简单" ? "text-emerald-700 bg-emerald-50 border-emerald-150" : "text-blue-700 bg-blue-50 border-blue-150"
                   }`}>
                     {question.difficulty}
                   </span>
                   <span className="text-stone-300">|</span>
-                  <span className="text-neutral-500">重要度: {question.importance}</span>
+                  <span className="text-neutral-500 font-medium">重要度: {question.importance}</span>
                 </div>
               </div>
 

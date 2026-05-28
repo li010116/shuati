@@ -98,6 +98,30 @@ export async function POST(req: NextRequest) {
               }
             });
 
+            const importanceVal = q.importance || "普通";
+            let qImportance = "普通";
+            if (importanceVal === "了解" || importanceVal === "低" || importanceVal === "普通") {
+              qImportance = "普通";
+            } else if (importanceVal === "较重要" || importanceVal === "重点" || importanceVal === "重要") {
+              qImportance = "重要";
+            } else if (importanceVal === "必会" || importanceVal === "核心" || importanceVal === "极高" || importanceVal === "极为重要") {
+              qImportance = "极为重要";
+            } else {
+              qImportance = importanceVal;
+            }
+
+            const difficultyVal = q.difficulty || "普通";
+            let qDifficulty = "普通";
+            if (difficultyVal === "低" || difficultyVal === "低难度" || difficultyVal === "简单") {
+              qDifficulty = "简单";
+            } else if (difficultyVal === "中" || difficultyVal === "中等" || difficultyVal === "中等难度" || difficultyVal === "中难度" || difficultyVal === "普通") {
+              qDifficulty = "普通";
+            } else if (difficultyVal === "高" || difficultyVal === "高难度" || difficultyVal === "困难") {
+              qDifficulty = "困难";
+            } else {
+              qDifficulty = difficultyVal;
+            }
+
             const qData = {
               questionId: rawQuestionId,
               primaryCategory: q.primaryCategory || "未分类",
@@ -105,8 +129,8 @@ export async function POST(req: NextRequest) {
               title: q.title,
               answer: q.answer || null,
               questionType: q.questionType || "问答题",
-              importance: q.importance || "普通",
-              difficulty: q.difficulty || "普通",
+              importance: qImportance,
+              difficulty: qDifficulty,
               tags: q.tags || null,
               sourcePage: q.sourcePage || null,
               masteryStatus: q.masteryStatus || "未学习",
@@ -238,10 +262,30 @@ export async function POST(req: NextRequest) {
           const questionType = questionTypeRaw ? String(questionTypeRaw).trim() : "问答题";
 
           const importanceRaw = getRowValue(row, "重要程度", "importance");
-          const importance = importanceRaw ? String(importanceRaw).trim() : "普通";
+          const importanceVal = importanceRaw ? String(importanceRaw).trim() : "普通";
+          let importance = "普通";
+          if (importanceVal === "了解" || importanceVal === "低" || importanceVal === "普通") {
+            importance = "普通";
+          } else if (importanceVal === "较重要" || importanceVal === "重点" || importanceVal === "重要") {
+            importance = "重要";
+          } else if (importanceVal === "必会" || importanceVal === "核心" || importanceVal === "极高" || importanceVal === "极为重要") {
+            importance = "极为重要";
+          } else {
+            importance = importanceVal;
+          }
 
           const difficultyRaw = getRowValue(row, "难度", "difficulty");
-          const difficulty = difficultyRaw ? String(difficultyRaw).trim() : "普通";
+          const difficultyVal = difficultyRaw ? String(difficultyRaw).trim() : "普通";
+          let difficulty = "普通";
+          if (difficultyVal === "低" || difficultyVal === "低难度" || difficultyVal === "简单") {
+            difficulty = "简单";
+          } else if (difficultyVal === "中" || difficultyVal === "中等" || difficultyVal === "中等难度" || difficultyVal === "中难度" || difficultyVal === "普通") {
+            difficulty = "普通";
+          } else if (difficultyVal === "高" || difficultyVal === "高难度" || difficultyVal === "困难") {
+            difficulty = "困难";
+          } else {
+            difficulty = difficultyVal;
+          }
 
           const tagsRaw = getRowValue(row, "标签", "tags");
           const tags = tagsRaw ? String(tagsRaw).trim() : null;

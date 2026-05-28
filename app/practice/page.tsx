@@ -424,8 +424,8 @@ export default function PracticePage() {
                   </div>
 
                   <div className="flex items-center gap-1 text-[10px]">
-                    <span className={`px-1 rounded font-bold ${
-                      currentQ.difficulty === "困难" ? "text-rose-600 bg-rose-50" : "text-emerald-600 bg-emerald-50"
+                    <span className={`px-1.5 py-0.5 rounded border font-bold ${
+                      currentQ.difficulty === "困难" ? "text-rose-700 bg-rose-50 border-rose-150" : currentQ.difficulty === "简单" ? "text-emerald-700 bg-emerald-50 border-emerald-150" : "text-blue-700 bg-blue-50 border-blue-150"
                     }`}>
                       {currentQ.difficulty}
                     </span>
