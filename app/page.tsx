@@ -176,7 +176,7 @@ export default function Dashboard() {
                 <span className="text-xl font-bold tracking-tight text-emerald-900 block mt-1">{stats.masteredCount} 题</span>
               </div>
               <div className="bg-white p-4 rounded-xl border border-neutral-200/60 shadow-xs border-l-amber-500 border-l-2">
-                <span className="text-[10px] text-amber-600 block font-semibold">模糊糊</span>
+                <span className="text-[10px] text-amber-600 block font-semibold">模糊</span>
                 <span className="text-xl font-bold tracking-tight text-amber-950 block mt-1">{stats.uncertainCount} 题</span>
               </div>
               <div className="bg-white p-4 rounded-xl border border-neutral-200/60 shadow-xs border-l-rose-500 border-l-2">
@@ -202,8 +202,8 @@ export default function Dashboard() {
             {[
               { label: "开始刷题", icon: GraduationCap, href: "/practice", color: "bg-blue-50 text-blue-600 border-blue-100" },
               { label: "快速背题", icon: BookMarked, href: "/review", color: "bg-teal-50 text-teal-600 border-teal-100" },
-              { label: "错题本本", icon: AlertOctagon, href: "/wrong", color: "bg-rose-50 text-rose-600 border-rose-100" },
-              { label: "收藏星夹", icon: Star, href: "/favorites", color: "bg-amber-50 text-amber-600 border-amber-100" },
+              { label: "错题本", icon: AlertOctagon, href: "/wrong", color: "bg-rose-50 text-rose-600 border-rose-100" },
+              { label: "收藏夹", icon: Star, href: "/favorites", color: "bg-amber-50 text-amber-600 border-amber-100" },
               { label: "导入备份", icon: UploadCloud, href: "/import", color: "bg-indigo-50 text-indigo-600 border-indigo-100" },
               { label: "题库设置", icon: Layers, href: "/question-banks", color: "bg-neutral-50 text-neutral-700 border-neutral-200" },
             ].map((gate) => {

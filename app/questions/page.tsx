@@ -517,139 +517,260 @@ export default function QuestionsPage() {
               </button>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-neutral-600 border-collapse">
-                <thead>
-                  <tr className="bg-neutral-50/80 border-b border-neutral-200 text-neutral-500 uppercase font-bold tracking-wider text-[10px]">
-                    <th className="px-4 py-3.5">编号 / 题干</th>
-                    <th className="px-4 py-3.5 hidden sm:table-cell">细分层级</th>
-                    <th className="px-4 py-3.5 hidden md:table-cell">基础难度</th>
-                    <th className="px-4 py-3.5 text-center">掌握度</th>
-                    <th className="px-4 py-3.5 text-center">错频</th>
-                    <th className="px-4 py-3.5 text-right font-sans">操控动作</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-neutral-100">
-                  {questions.map((q) => {
-                    let mastColor = "bg-neutral-100 text-neutral-600";
-                    if (q.masteryStatus === "已掌握") mastColor = "bg-emerald-50 text-emerald-700 border border-emerald-100";
-                    else if (q.masteryStatus === "模糊") mastColor = "bg-amber-50 text-amber-700 border border-amber-100";
-                    else if (q.masteryStatus === "未掌握") mastColor = "bg-rose-50 text-rose-700 border border-rose-100";
+            <>
+              {/* Mobile Card List View */}
+              <div className="block md:hidden divide-y divide-neutral-100 bg-white">
+                {questions.map((q) => {
+                  let mastColor = "bg-neutral-100 text-neutral-600";
+                  if (q.masteryStatus === "已掌握") mastColor = "bg-emerald-50 text-emerald-700 border border-emerald-100";
+                  else if (q.masteryStatus === "模糊") mastColor = "bg-amber-50 text-amber-700 border border-amber-100";
+                  else if (q.masteryStatus === "未掌握") mastColor = "bg-rose-50 text-rose-700 border border-rose-100";
 
-                    return (
-                      <tr key={q.id} className="hover:bg-neutral-50/50">
-                        {/* Title & unique codes */}
-                        <td className="px-4 py-3.5 max-w-sm">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="font-mono text-[10px] bg-neutral-100 border text-neutral-500 font-bold px-1.5 rounded">
-                              {q.questionId}
-                            </span>
-                            <span className="text-[9px] bg-blue-50 text-blue-600 px-1 py-0.5 rounded font-semibold truncate max-w-[120px]" title={q.questionBank?.name}>
-                              {q.questionBank?.name || "综合库"}
-                            </span>
-                            {q.isAnswerMissing && (
-                              <span className="text-[9px] bg-stone-100 text-stone-500 px-1.5 py-0.5 rounded flex items-center gap-0.5 border">
-                                <AlertCircle className="w-2.5 h-2.5 text-orange-500" /> 待补答案
-                              </span>
-                            )}
-                          </div>
-                          
-                          <div className="font-semibold text-neutral-800 tracking-tight mt-1.5 text-xs">
-                            {q.title}
-                          </div>
-                        </td>
-
-                        {/* Categories details */}
-                        <td className="px-4 py-3.5 hidden sm:table-cell font-sans">
-                          <span className="font-semibold text-neutral-700 bg-neutral-100 px-2 py-0.5 rounded border text-[10px]">
-                            {q.primaryCategory}
+                  return (
+                    <div key={q.id} className="p-4 space-y-3.5">
+                      {/* Top Row: IDs, Badges, & Star Bookmark */}
+                      <div className="flex items-center justify-between gap-2.5">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="font-mono text-[10px] bg-neutral-100 border text-neutral-500 font-bold px-1.5 py-0.5 rounded">
+                            {q.questionId}
                           </span>
-                          {q.secondaryCategory && (
-                            <span className="text-neutral-400 ml-1">/ {q.secondaryCategory}</span>
-                          )}
-                        </td>
-
-                        {/* Core Difficulty metadata details */}
-                        <td className="px-4 py-3.5 hidden md:table-cell">
-                          <div className="space-y-0.5 font-sans">
-                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded border inline-block ${
-                              q.difficulty === "困难" ? "text-rose-700 bg-rose-50 border-rose-150" : q.difficulty === "简单" ? "text-emerald-700 bg-emerald-50 border-emerald-150" : "text-blue-700 bg-blue-50 border-blue-150"
-                            }`}>
-                              {q.difficulty}
+                          <span className="text-[9px] bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded font-semibold truncate max-w-[120px]" title={q.questionBank?.name}>
+                            {q.questionBank?.name || "综合库"}
+                          </span>
+                          {q.isAnswerMissing && (
+                            <span className="text-[9px] bg-stone-100 text-stone-500 px-1.5 py-0.5 rounded flex items-center gap-0.5 border">
+                              <AlertCircle className="w-2.5 h-2.5 text-orange-500" /> 待补答案
                             </span>
-                            <span className="text-neutral-400 block text-[9px] font-medium font-mono">重要: {q.importance}</span>
-                          </div>
-                        </td>
+                          )}
+                        </div>
 
-                        {/* Mastery level bubble */}
-                        <td className="px-4 py-3.5 text-center">
-                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${mastColor}`}>
+                        {/* Star Favorite icon */}
+                        <button
+                          onClick={() => handleToggleFavorite(q)}
+                          className={`p-1.5 rounded-lg border hover:scale-105 active:scale-95 transition-all outline-hidden ${
+                            q.isFavorite
+                              ? "bg-amber-50 text-amber-500 border-amber-200"
+                              : "text-neutral-400 border-neutral-200 bg-white"
+                          }`}
+                          title="标记收藏"
+                        >
+                          <Star className={`w-4 h-4 ${q.isFavorite ? "fill-current" : ""}`} />
+                        </button>
+                      </div>
+
+                      {/* Main Title of the question */}
+                      <div className="text-neutral-800 font-bold text-xs sm:text-sm leading-relaxed cursor-pointer select-text">
+                        {q.title}
+                      </div>
+
+                      {/* Category & difficulty level badges */}
+                      <div className="flex flex-wrap gap-1.5 items-center text-[10px]">
+                        <span className="font-semibold text-neutral-600 bg-neutral-50 px-2 py-0.5 rounded border text-[9.5px]">
+                          {q.primaryCategory}
+                          {q.secondaryCategory ? ` / ${q.secondaryCategory}` : ""}
+                        </span>
+                        
+                        <span className={`text-[9px] font-semibold px-2 py-0.5 rounded border ${
+                          q.difficulty === "困难" ? "text-rose-700 bg-rose-50 border-rose-100" : q.difficulty === "简单" ? "text-emerald-700 bg-emerald-50 border-emerald-100" : "text-blue-700 bg-blue-50 border-blue-100"
+                        }`}>
+                          {q.difficulty}
+                        </span>
+
+                        <span className="text-neutral-450 block text-[9.5px] font-mono">重要: {q.importance}</span>
+                      </div>
+
+                      {/* Status block: Mastery and wrong frequency */}
+                      <div className="bg-neutral-50/70 p-2.5 border border-neutral-100 rounded-xl flex items-center justify-between text-[10.5px] text-neutral-500">
+                        <div className="flex items-center gap-1.5">
+                          <span>当前掌握:</span>
+                          <span className={`px-2 py-0.5 rounded-full text-[9.5px] font-bold ${mastColor}`}>
                             {q.masteryStatus || "未学习"}
                           </span>
-                        </td>
+                        </div>
+                        <div className="flex items-center gap-3 font-mono">
+                          <span>错频: <strong className={q.wrongCount > 0 ? "text-rose-600 text-[11px]" : "text-neutral-500 font-normal"}>{q.wrongCount}次</strong></span>
+                          <span>复习: <strong className="text-neutral-700 font-bold">{q.reviewCount}次</strong></span>
+                        </div>
+                      </div>
 
-                        {/* Record stats count */}
-                        <td className="px-4 py-3.5 text-center font-mono text-[10px]">
-                          <span className={`${q.wrongCount > 0 ? "text-rose-600 font-bold" : "text-neutral-400"}`}>
-                            {q.wrongCount}次
-                          </span>
-                          <span className="text-neutral-400 block text-[9px]">复习: {q.reviewCount}</span>
-                        </td>
+                      {/* Control row operations drawer */}
+                      <div className="flex flex-wrap items-center justify-end gap-2 pt-1 border-t border-neutral-100">
+                        <button
+                          onClick={() => handleAddToWrong(q)}
+                          className="px-2.5 py-1 text-[10.5px] font-semibold rounded-lg border border-neutral-200 text-neutral-600 bg-white hover:bg-rose-50 hover:text-rose-600 active:scale-95 transition-all flex items-center gap-1"
+                          title="计入错题"
+                        >
+                          <AlertOctagon className="w-3.5 h-3.5" />
+                          <span>错题+1</span>
+                        </button>
 
-                        {/* Row operation modifiers */}
-                        <td className="px-4 py-3.5 text-right space-x-1.5 shrink-0">
-                          {/* Toggle bookmark */}
-                          <button
-                            onClick={() => handleToggleFavorite(q)}
-                            className={`p-1 rounded border hover:scale-105 transition-all inline-block ${
-                              q.isFavorite
-                                ? "bg-amber-50 text-amber-500 border-amber-200"
-                                : "text-neutral-400 border-neutral-200"
-                            }`}
-                            title="标记收藏"
-                          >
-                            <Star className="w-3.5 h-3.5 fill-current" />
-                          </button>
+                        <Link
+                          href={`/questions/${q.id}`}
+                          className="px-2.5 py-1 text-[10.5px] font-semibold rounded-lg border border-neutral-200 text-neutral-600 bg-white hover:bg-blue-50 hover:text-blue-600 active:scale-95 transition-all flex items-center gap-1 inline-flex items-center"
+                          title="查看详情"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>查看详情</span>
+                        </Link>
 
-                          {/* Trigger Err */}
-                          <button
-                            onClick={() => handleAddToWrong(q)}
-                            className="p-1 rounded border border-neutral-200 text-neutral-400 hover:text-rose-600"
-                            title="计入错题"
-                          >
-                            <AlertOctagon className="w-3.5 h-3.5" />
-                          </button>
+                        <button
+                          onClick={() => openEditModal(q)}
+                          className="px-2.5 py-1 text-[10.5px] font-semibold rounded-lg border border-neutral-200 text-neutral-600 bg-white hover:bg-amber-50 hover:text-amber-600 active:scale-95 transition-all flex items-center gap-1"
+                          title="编辑修改"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                          <span>编辑</span>
+                        </button>
 
-                          <Link
-                            href={`/questions/${q.id}`}
-                            className="p-1 rounded border border-neutral-200 text-neutral-400 hover:text-blue-600 hover:border-blue-200 inline-block align-middle"
-                            title="查看详情与研究记录"
-                          >
-                            <Eye className="w-3.5 h-3.5" />
-                          </Link>
+                        <button
+                          onClick={() => handleDeleteClick(q.id, q.title)}
+                          className="px-2.5 py-1 text-[10.5px] font-semibold rounded-lg border border-neutral-200 text-rose-500 bg-white hover:bg-rose-50 active:scale-95 transition-all flex items-center gap-1"
+                          title="物理删除"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>删除</span>
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
 
-                          <button
-                            onClick={() => openEditModal(q)}
-                            className="p-1 rounded border border-neutral-200 text-neutral-400 hover:text-amber-500 hover:border-amber-200 align-middle"
-                            title="编辑修改"
-                          >
-                            <Edit2 className="w-3.5 h-3.5" />
-                          </button>
+              {/* Desktop version - Table (hidden md:block) */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-left text-xs text-neutral-600 border-collapse">
+                  <thead>
+                    <tr className="bg-neutral-50/80 border-b border-neutral-200 text-neutral-500 uppercase font-bold tracking-wider text-[10px]">
+                      <th className="px-4 py-3.5">编号 / 题干</th>
+                      <th className="px-4 py-3.5 hidden sm:table-cell">细分层级</th>
+                      <th className="px-4 py-3.5 hidden md:table-cell">基础难度</th>
+                      <th className="px-4 py-3.5 text-center">掌握度</th>
+                      <th className="px-4 py-3.5 text-center">错频</th>
+                      <th className="px-4 py-3.5 text-right font-sans">操控动作</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-neutral-100">
+                    {questions.map((q) => {
+                      let mastColor = "bg-neutral-100 text-neutral-600";
+                      if (q.masteryStatus === "已掌握") mastColor = "bg-emerald-50 text-emerald-700 border border-emerald-100";
+                      else if (q.masteryStatus === "模糊") mastColor = "bg-amber-50 text-amber-700 border border-amber-100";
+                      else if (q.masteryStatus === "未掌握") mastColor = "bg-rose-50 text-rose-700 border border-rose-100";
 
-                          <button
-                            onClick={() => handleDeleteClick(q.id, q.title)}
-                            className="p-1 rounded border border-neutral-200 text-neutral-400 hover:text-rose-600 select-none align-middle"
-                            title="物理删除"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                      return (
+                        <tr key={q.id} className="hover:bg-neutral-50/50">
+                          {/* Title & unique codes */}
+                          <td className="px-4 py-3.5 max-w-sm">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-mono text-[10px] bg-neutral-100 border text-neutral-500 font-bold px-1.5 rounded">
+                                {q.questionId}
+                              </span>
+                              <span className="text-[9px] bg-blue-50 text-blue-600 px-1 py-0.5 rounded font-semibold truncate max-w-[120px]" title={q.questionBank?.name}>
+                                {q.questionBank?.name || "综合库"}
+                              </span>
+                              {q.isAnswerMissing && (
+                                <span className="text-[9px] bg-stone-100 text-stone-500 px-1.5 py-0.5 rounded flex items-center gap-0.5 border">
+                                  <AlertCircle className="w-2.5 h-2.5 text-orange-500" /> 待补答案
+                                </span>
+                              )}
+                            </div>
+                            
+                            <div className="font-semibold text-neutral-800 tracking-tight mt-1.5 text-xs">
+                              {q.title}
+                            </div>
+                          </td>
+
+                          {/* Categories details */}
+                          <td className="px-4 py-3.5 hidden sm:table-cell font-sans">
+                            <span className="font-semibold text-neutral-700 bg-neutral-100 px-2 py-0.5 rounded border text-[10px]">
+                              {q.primaryCategory}
+                            </span>
+                            {q.secondaryCategory && (
+                              <span className="text-neutral-400 ml-1">/ {q.secondaryCategory}</span>
+                            )}
+                          </td>
+
+                          {/* Core Difficulty metadata details */}
+                          <td className="px-4 py-3.5 hidden md:table-cell">
+                            <div className="space-y-0.5 font-sans">
+                              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded border inline-block ${
+                                q.difficulty === "困难" ? "text-rose-700 bg-rose-50 border-rose-150" : q.difficulty === "简单" ? "text-emerald-700 bg-emerald-50 border-emerald-150" : "text-blue-700 bg-blue-50 border-blue-150"
+                              }`}>
+                                {q.difficulty}
+                              </span>
+                              <span className="text-neutral-400 block text-[9px] font-medium font-mono">重要: {q.importance}</span>
+                            </div>
+                          </td>
+
+                          {/* Mastery level bubble */}
+                          <td className="px-4 py-3.5 text-center">
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${mastColor}`}>
+                              {q.masteryStatus || "未学习"}
+                            </span>
+                          </td>
+
+                          {/* Record stats count */}
+                          <td className="px-4 py-3.5 text-center font-mono text-[10px]">
+                            <span className={`${q.wrongCount > 0 ? "text-rose-600 font-bold" : "text-neutral-400"}`}>
+                              {q.wrongCount}次
+                            </span>
+                            <span className="text-neutral-400 block text-[9px]">复习: {q.reviewCount}</span>
+                          </td>
+
+                          {/* Row operation modifiers */}
+                          <td className="px-4 py-3.5 text-right space-x-1.5 shrink-0">
+                            {/* Toggle bookmark */}
+                            <button
+                              onClick={() => handleToggleFavorite(q)}
+                              className={`p-1 rounded border hover:scale-105 transition-all inline-block ${
+                                q.isFavorite
+                                  ? "bg-amber-50 text-amber-500 border-amber-200"
+                                  : "text-neutral-400 border-neutral-200"
+                              }`}
+                              title="标记收藏"
+                            >
+                              <Star className="w-3.5 h-3.5 fill-current" />
+                            </button>
+
+                            {/* Trigger Err */}
+                            <button
+                              onClick={() => handleAddToWrong(q)}
+                              className="p-1 rounded border border-neutral-200 text-neutral-400 hover:text-rose-600"
+                              title="计入错题"
+                            >
+                              <AlertOctagon className="w-3.5 h-3.5" />
+                            </button>
+
+                            <Link
+                              href={`/questions/${q.id}`}
+                              className="p-1 rounded border border-neutral-200 text-neutral-400 hover:text-blue-600 hover:border-blue-200 inline-block align-middle"
+                              title="查看详情与研究记录"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                            </Link>
+
+                            <button
+                              onClick={() => openEditModal(q)}
+                              className="p-1 rounded border border-neutral-200 text-neutral-400 hover:text-amber-500 hover:border-amber-200 align-middle"
+                              title="编辑修改"
+                            >
+                              <Edit2 className="w-3.5 h-3.5" />
+                            </button>
+
+                            <button
+                              onClick={() => handleDeleteClick(q.id, q.title)}
+                              className="p-1 rounded border border-neutral-200 text-neutral-400 hover:text-rose-600 select-none align-middle"
+                              title="物理删除"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
 
           {/* Simple Pagination bar controllers */}
