@@ -35,12 +35,16 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // 2. Read file to buffer & save to uploads directory
+    // 2. Read file to buffer & save to uploads directory (optional local backup)
     const buffer = Buffer.from(await file.arrayBuffer());
-    const uploadsDir = ensureUploadsDir();
-    const diskFileName = `${Date.now()}_${file.name}`;
-    const filePath = path.join(uploadsDir, diskFileName);
-    fs.writeFileSync(filePath, buffer);
+    try {
+      const uploadsDir = ensureUploadsDir();
+      const diskFileName = `${Date.now()}_${file.name}`;
+      const filePath = path.join(uploadsDir, diskFileName);
+      fs.writeFileSync(filePath, buffer);
+    } catch (writeErr) {
+      console.warn("Unable to write physical backup file to disk (this is expected and harmless on serverless platforms):", writeErr);
+    }
 
     // Save the design source file name
     await prisma.questionBank.update({

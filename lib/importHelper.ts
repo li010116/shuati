@@ -1,6 +1,7 @@
 import * as xlsx from "xlsx";
 import * as path from "path";
 import * as fs from "fs";
+import * as os from "os";
 import { prisma } from "./prisma";
 
 // Define interface for import result
@@ -15,9 +16,17 @@ export interface ImportResult {
 }
 
 export function ensureUploadsDir() {
-  const uploadsDir = path.join(process.cwd(), "uploads");
-  if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
+  let uploadsDir = path.join(process.cwd(), "uploads");
+  try {
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+  } catch (err) {
+    console.warn("Unable to create uploads directory in workspace root, falling back to OS temp directory:", err);
+    uploadsDir = path.join(os.tmpdir(), "uploads");
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
   }
   return uploadsDir;
 }

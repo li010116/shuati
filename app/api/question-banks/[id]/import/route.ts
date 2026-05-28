@@ -32,12 +32,16 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
       return errorResponse("请通过file字段上传Excel文件");
     }
 
-    // Read to buffer & save on disk
+    // Read to buffer & save on disk (optional local backup)
     const buffer = Buffer.from(await file.arrayBuffer());
-    const uploadsDir = ensureUploadsDir();
-    const diskFileName = `${Date.now()}_${file.name}`;
-    const filePath = path.join(uploadsDir, diskFileName);
-    fs.writeFileSync(filePath, buffer);
+    try {
+      const uploadsDir = ensureUploadsDir();
+      const diskFileName = `${Date.now()}_${file.name}`;
+      const filePath = path.join(uploadsDir, diskFileName);
+      fs.writeFileSync(filePath, buffer);
+    } catch (writeErr) {
+      console.warn("Unable to write physical backup file to disk (this is expected and harmless on serverless platforms):", writeErr);
+    }
 
     // Update bank's source file to the most recent one
     await prisma.questionBank.update({
