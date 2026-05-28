@@ -29,6 +29,9 @@ export default function WrongBookPage() {
   // Filters State
   const [selectedBankId, setSelectedBankId] = useState("");
 
+  const [total, setTotal] = useState(0);
+  const [limit, setLimit] = useState(150);
+
   // Revealed answer state map
   const [revealedIds, setRevealedIds] = useState<Record<number, boolean>>({});
 
@@ -51,7 +54,7 @@ export default function WrongBookPage() {
 
       const params: QuestionQueryParams = {
         page: 1,
-        pageSize: 150, // Grab error records to lists
+        pageSize: limit, // Grab error records to lists
         questionBankId: selectedBankId || undefined,
         hasWrong: "true", // Strictly wrongCount > 0
       };
@@ -61,6 +64,7 @@ export default function WrongBookPage() {
       // Sort in memory by wrongCount descending as requested in specification
       const sorted = [...res.list].sort((a, b) => b.wrongCount - a.wrongCount);
       setQuestions(sorted);
+      setTotal(res.total);
     } catch (err: any) {
       setError(err.message || "加载错题本故障");
     } finally {
@@ -80,7 +84,7 @@ export default function WrongBookPage() {
       await loadQuestions();
     };
     run();
-  }, [selectedBankId]);
+  }, [selectedBankId, limit]);
 
   const toggleRevealAnswer = async (id: number) => {
     const isRevealed = !!revealedIds[id];
@@ -148,15 +152,15 @@ export default function WrongBookPage() {
               <AlertOctagon className="w-5 h-5 text-rose-500 animate-pulse" />
               温故错题集 (ERRATA CENTER)
             </h2>
-            <p className="text-xs text-neutral-400 mt-1">
-              本错题本自动将所有错题次数 `wrongCount &gt; 0` 的考点归拢。列表按错频倒序展示，帮助您查漏补缺、针对击破！
+             <p className="text-xs text-neutral-400 mt-1">
+              本错题本自动将所有错题次数 `wrongCount &gt; 0` 的考点归拢。列表按错频倒序展示。当前已载入 <span className="font-semibold text-neutral-800 font-mono">{questions.length}</span> 道 (共计 <span className="font-semibold text-neutral-800 font-mono">{total}</span> 道)。
             </p>
           </div>
 
           <div className="w-full sm:w-auto">
             <select
               value={selectedBankId}
-              onChange={(e) => setSelectedBankId(e.target.value)}
+              onChange={(e) => { setSelectedBankId(e.target.value); setLimit(150); }}
               className="w-full px-3 py-2 border rounded-lg bg-white outline-hidden text-xs font-semibold focus:ring-1 focus:ring-blue-500 text-neutral-700"
             >
               <option value="">全部题库错题筛选</option>
@@ -311,6 +315,19 @@ export default function WrongBookPage() {
                 </div>
               );
             })}
+
+            {/* Load More Button */}
+            {!loading && questions.length < total && (
+              <div className="flex justify-center pt-4 pb-8">
+                <button
+                  onClick={() => setLimit((prev) => prev + 150)}
+                  className="px-6 py-2.5 bg-neutral-950 hover:bg-neutral-800 text-white border text-xs font-bold rounded-lg transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span>加载更多错题</span>
+                  <span className="text-[10px] text-neutral-300 font-mono">({questions.length} / {total} 道)</span>
+                </button>
+              </div>
+            )}
           </div>
         )}
         {/* Clear Wrong Record Confirmation Modal Popup */}

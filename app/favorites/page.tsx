@@ -28,6 +28,9 @@ export default function FavoritesPage() {
   // Filter state
   const [selectedBankId, setSelectedBankId] = useState("");
 
+  const [total, setTotal] = useState(0);
+  const [limit, setLimit] = useState(150);
+
   // Revealed map state
   const [revealedIds, setRevealedIds] = useState<Record<number, boolean>>({});
 
@@ -47,13 +50,14 @@ export default function FavoritesPage() {
 
       const params: QuestionQueryParams = {
         page: 1,
-        pageSize: 150, // Grab bookmarked records safely
+        pageSize: limit, // Grab bookmarked records safely
         questionBankId: selectedBankId || undefined,
         isFavorite: "true", // Filter solely favors
       };
 
       const res = await questionApi.query(params);
       setQuestions(res.list);
+      setTotal(res.total);
     } catch (err: any) {
       setError(err.message || "获取收藏列表失败");
     } finally {
@@ -73,7 +77,7 @@ export default function FavoritesPage() {
       await loadQuestions();
     };
     run();
-  }, [selectedBankId]);
+  }, [selectedBankId, limit]);
 
   const toggleRevealAnswer = async (id: number) => {
     const isRevealed = !!revealedIds[id];
@@ -134,15 +138,15 @@ export default function FavoritesPage() {
               <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
               收藏夹考点专线 (FAVORITES RADAR)
             </h2>
-            <p className="text-xs text-neutral-400 mt-1">
-              这里收罗了您在刷题或背题过程中点击标星的精品高频考点。您可以选择题库，或点击右侧一键直达进行专项自测。
+             <p className="text-xs text-neutral-400 mt-1">
+              这里收罗了您在刷题或背题过程中点击标星的精品高频考点。当前已载入 <span className="font-semibold text-neutral-800 font-mono">{questions.length}</span> 道 (共计 <span className="font-semibold text-neutral-800 font-mono">{total}</span> 道)。
             </p>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <select
               value={selectedBankId}
-              onChange={(e) => setSelectedBankId(e.target.value)}
+              onChange={(e) => { setSelectedBankId(e.target.value); setLimit(150); }}
               className="px-3 py-2 border rounded-lg bg-white outline-hidden text-xs font-semibold focus:ring-1 focus:ring-blue-500 text-neutral-700 min-w-[150px]"
             >
               <option value="">全部题库收藏过滤</option>
@@ -299,6 +303,19 @@ export default function FavoritesPage() {
                 </div>
               );
             })}
+
+            {/* Load More Button */}
+            {!loading && questions.length < total && (
+              <div className="flex justify-center pt-4 pb-8">
+                <button
+                  onClick={() => setLimit((prev) => prev + 150)}
+                  className="px-6 py-2.5 bg-neutral-950 hover:bg-neutral-800 text-white border text-xs font-bold rounded-lg transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span>加载更多收藏</span>
+                  <span className="text-[10px] text-neutral-300 font-mono">({questions.length} / {total} 道)</span>
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

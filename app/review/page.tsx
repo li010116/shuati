@@ -35,6 +35,9 @@ export default function ReviewPage() {
   const [difficulty, setDifficulty] = useState("");
   const [masteryStatus, setMasteryStatus] = useState("");
 
+  const [total, setTotal] = useState(0);
+  const [limit, setLimit] = useState(150);
+
   const initData = async () => {
     try {
       const bList = await questionBankApi.getAll();
@@ -51,7 +54,7 @@ export default function ReviewPage() {
 
       const params: QuestionQueryParams = {
         page: 1,
-        pageSize: 150, // Larger size for rapid scroll review feed
+        pageSize: limit, // Larger size for rapid scroll review feed
         keyword: keyword.trim(),
         questionBankId: selectedBankId || undefined,
         primaryCategory: primaryCategory.trim() || undefined,
@@ -61,6 +64,7 @@ export default function ReviewPage() {
 
       const res = await questionApi.query(params);
       setQuestions(res.list);
+      setTotal(res.total);
     } catch (err: any) {
       setError(err.message || "获取背题列表异常");
     } finally {
@@ -80,10 +84,11 @@ export default function ReviewPage() {
       await loadQuestions();
     };
     run();
-  }, [selectedBankId, primaryCategory, difficulty, masteryStatus]);
+  }, [selectedBankId, primaryCategory, difficulty, masteryStatus, limit]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setLimit(150);
     loadQuestions();
   };
 
@@ -133,7 +138,7 @@ export default function ReviewPage() {
               快速速背模式 (DECK INDEX)
             </h2>
             <p className="text-xs text-neutral-400 mt-1">
-              本页面同时将题目和参考答案全盘铺平展示，支持按题库、专项、难度检索，适合考前冲刺强化记忆。
+              本页面同时将题目和参考答案全盘铺平展示，支持按题库、专项、难度检索。当前已载入 <span className="font-semibold text-neutral-800 font-mono">{questions.length}</span> 道 (共计 <span className="font-semibold text-neutral-800 font-mono">{total}</span> 道)。
             </p>
           </div>
         </div>
@@ -176,7 +181,7 @@ export default function ReviewPage() {
               <label className="text-[10px] font-bold text-neutral-400 uppercase">源题库仓</label>
               <select
                 value={selectedBankId}
-                onChange={(e) => setSelectedBankId(e.target.value)}
+                onChange={(e) => { setSelectedBankId(e.target.value); setLimit(150); }}
                 className="w-full p-2 border border-neutral-200 rounded-md bg-white focus:outline-hidden text-xs"
               >
                 <option value="">全部题库</option>
@@ -191,7 +196,7 @@ export default function ReviewPage() {
               <input
                 type="text"
                 value={primaryCategory}
-                onChange={(e) => setPrimaryCategory(e.target.value)}
+                onChange={(e) => { setPrimaryCategory(e.target.value); setLimit(150); }}
                 placeholder="模糊定位分类..."
                 className="w-full p-2 border border-neutral-200 rounded-md bg-white focus:outline-hidden text-xs"
               />
@@ -201,7 +206,7 @@ export default function ReviewPage() {
               <label className="text-[10px] font-bold text-neutral-400 uppercase">基础难度</label>
               <select
                 value={difficulty}
-                onChange={(e) => setDifficulty(e.target.value)}
+                onChange={(e) => { setDifficulty(e.target.value); setLimit(150); }}
                 className="w-full p-2 border border-neutral-200 rounded-md bg-white focus:outline-hidden text-xs"
               >
                 <option value="">全部难度</option>
@@ -215,7 +220,7 @@ export default function ReviewPage() {
               <label className="text-[10px] font-bold text-neutral-400 uppercase">掌握程度</label>
               <select
                 value={masteryStatus}
-                onChange={(e) => setMasteryStatus(e.target.value)}
+                onChange={(e) => { setMasteryStatus(e.target.value); setLimit(150); }}
                 className="w-full p-2 border border-neutral-200 rounded-md bg-white focus:outline-hidden text-xs"
               >
                 <option value="">全部状态</option>
@@ -365,6 +370,19 @@ export default function ReviewPage() {
                 </div>
               );
             })}
+
+            {/* Load More Button */}
+            {!loading && questions.length < total && (
+              <div className="flex justify-center pt-4 pb-8">
+                <button
+                  onClick={() => setLimit((prev) => prev + 150)}
+                  className="px-6 py-2.5 bg-neutral-950 hover:bg-neutral-800 text-white border text-xs font-bold rounded-lg transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span>加载更多题目</span>
+                  <span className="text-[10px] text-neutral-300 font-mono">({questions.length} / {total} 道)</span>
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
