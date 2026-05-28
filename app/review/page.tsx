@@ -69,11 +69,17 @@ export default function ReviewPage() {
   };
 
   useEffect(() => {
-    initData();
+    const run = async () => {
+      await initData();
+    };
+    run();
   }, []);
 
   useEffect(() => {
-    loadQuestions();
+    const run = async () => {
+      await loadQuestions();
+    };
+    run();
   }, [selectedBankId, primaryCategory, difficulty, masteryStatus]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {

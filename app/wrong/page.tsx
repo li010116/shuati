@@ -66,11 +66,17 @@ export default function WrongBookPage() {
   };
 
   useEffect(() => {
-    initData();
+    const run = async () => {
+      await initData();
+    };
+    run();
   }, []);
 
   useEffect(() => {
-    loadQuestions();
+    const run = async () => {
+      await loadQuestions();
+    };
+    run();
   }, [selectedBankId]);
 
   const toggleRevealAnswer = async (id: number) => {

@@ -53,7 +53,10 @@ export default function QuestionDetailPage() {
   };
 
   useEffect(() => {
-    loadData();
+    const run = async () => {
+      await loadData();
+    };
+    run();
   }, [id]);
 
   const handleUpdateMastery = async (status: string) => {

@@ -69,7 +69,10 @@ export default function ImportPage() {
   };
 
   useEffect(() => {
-    loadData();
+    const run = async () => {
+      await loadData();
+    };
+    run();
   }, []);
 
   const handleNewFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

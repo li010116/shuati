@@ -68,7 +68,10 @@ export default function QuestionBanksPage() {
   };
 
   useEffect(() => {
-    loadData();
+    const run = async () => {
+      await loadData();
+    };
+    run();
   }, []);
 
   const handleCreate = async (e: React.FormEvent) => {

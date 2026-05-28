@@ -63,7 +63,10 @@ export default function Dashboard() {
   };
 
   useEffect(() => {
-    loadData();
+    const run = async () => {
+      await loadData();
+    };
+    run();
   }, []);
 
   if (loading) {

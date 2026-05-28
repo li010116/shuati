@@ -112,12 +112,18 @@ export default function QuestionsPage() {
 
   // Run on mount
   useEffect(() => {
-    initData();
+    const run = async () => {
+      await initData();
+    };
+    run();
   }, []);
 
   // Run whenever search parameters shift
   useEffect(() => {
-    loadQuestions(page);
+    const run = async () => {
+      await loadQuestions(page);
+    };
+    run();
   }, [
     selectedBankId,
     primaryCategory,

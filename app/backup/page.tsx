@@ -56,7 +56,10 @@ export default function BackupPage() {
   };
 
   useEffect(() => {
-    loadData();
+    const run = async () => {
+      await loadData();
+    };
+    run();
   }, []);
 
   const handleExport = async () => {
