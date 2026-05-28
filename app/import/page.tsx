@@ -448,7 +448,7 @@ export default function ImportPage() {
                   </div>
                 </div>
 
-                {progress.errors.length > 0 && (
+                {progress.errors && progress.errors.length > 0 && (
                   <div className="space-y-1">
                     <span className="text-[9px] font-bold text-neutral-400 block">实时验证故障提醒 ({progress.failCount})</span>
                     <div className="max-h-24 overflow-y-auto bg-stone-50 border p-2 rounded-lg text-[9px] font-mono text-rose-600 space-y-0.5">
@@ -493,7 +493,7 @@ export default function ImportPage() {
                   <span className="font-mono font-bold text-sm">{result.failCount} 行</span>
                 </div>
 
-                {result.errors.length > 0 && (
+                {result.errors && result.errors.length > 0 && (
                   <div className="space-y-1.5">
                     <span className="text-[10px] font-bold text-neutral-400 uppercase block">故障原因汇总</span>
                     <div className="max-h-40 overflow-y-auto bg-stone-50 border p-2.5 rounded-lg text-[10px] font-mono text-neutral-600 space-y-1">

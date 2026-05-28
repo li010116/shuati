@@ -546,7 +546,7 @@ export default function QuestionBanksPage() {
                       <li>成功合并数：{importResult.successCount} (追加：{importResult.createdCount} / 覆写：{importResult.updatedCount})</li>
                       <li>失败错误行：{importResult.failCount}</li>
                     </ul>
-                    {importResult.errors.length > 0 && (
+                    {importResult.errors && importResult.errors.length > 0 && (
                       <div className="mt-2 border-t border-emerald-200 pt-2 text-rose-700">
                         <p className="font-bold text-[10px]">错误提示 (最前10条)：</p>
                         <p className="text-[10px] break-words line-clamp-3">{importResult.errors.join("; ")}</p>

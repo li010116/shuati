@@ -1,4 +1,4 @@
-// src/api/statisticsApi.ts
+import { safeFetchJson } from "./apiClient";
 
 export interface StatOverview {
   totalQuestions: number;
@@ -54,36 +54,24 @@ export const statisticsApi = {
   // GET /api/statistics/overview
   async getOverview(questionBankId?: number): Promise<StatOverview> {
     const q = questionBankId ? `?questionBankId=${questionBankId}` : "";
-    const res = await fetch(`/api/statistics/overview${q}`);
-    const json = await res.json();
-    if (json.code !== 0) throw new Error(json.message);
-    return json.data;
+    return safeFetchJson<StatOverview>(`/api/statistics/overview${q}`);
   },
 
   // GET /api/statistics/categories
   async getCategories(questionBankId?: number): Promise<StatCategory[]> {
     const q = questionBankId ? `?questionBankId=${questionBankId}` : "";
-    const res = await fetch(`/api/statistics/categories${q}`);
-    const json = await res.json();
-    if (json.code !== 0) throw new Error(json.message);
-    return json.data;
+    return safeFetchJson<StatCategory[]>(`/api/statistics/categories${q}`);
   },
 
   // GET /api/statistics/difficulties
   async getDifficulties(questionBankId?: number): Promise<StatDifficulty[]> {
     const q = questionBankId ? `?questionBankId=${questionBankId}` : "";
-    const res = await fetch(`/api/statistics/difficulties${q}`);
-    const json = await res.json();
-    if (json.code !== 0) throw new Error(json.message);
-    return json.data;
+    return safeFetchJson<StatDifficulty[]>(`/api/statistics/difficulties${q}`);
   },
 
   // GET /api/statistics/import-batches
   async getImportBatches(questionBankId?: number): Promise<ImportBatch[]> {
     const q = questionBankId ? `?questionBankId=${questionBankId}` : "";
-    const res = await fetch(`/api/statistics/import-batches${q}`);
-    const json = await res.json();
-    if (json.code !== 0) throw new Error(json.message);
-    return json.data;
+    return safeFetchJson<ImportBatch[]>(`/api/statistics/import-batches${q}`);
   },
 };

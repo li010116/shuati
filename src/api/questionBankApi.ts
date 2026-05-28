@@ -1,4 +1,4 @@
-// src/api/questionBankApi.ts
+import { safeFetchJson } from "./apiClient";
 
 export interface QuestionBank {
   id: number;
@@ -13,50 +13,36 @@ export interface QuestionBank {
 export const questionBankApi = {
   // GET /api/question-banks
   async getAll(): Promise<QuestionBank[]> {
-    const res = await fetch("/api/question-banks");
-    const json = await res.json();
-    if (json.code !== 0) throw new Error(json.message);
-    return json.data;
+    return safeFetchJson<QuestionBank[]>("/api/question-banks");
   },
 
   // GET /api/question-banks/:id
   async getById(id: number): Promise<QuestionBank> {
-    const res = await fetch(`/api/question-banks/${id}`);
-    const json = await res.json();
-    if (json.code !== 0) throw new Error(json.message);
-    return json.data;
+    return safeFetchJson<QuestionBank>(`/api/question-banks/${id}`);
   },
 
   // POST /api/question-banks
   async create(name: string, description?: string): Promise<QuestionBank> {
-    const res = await fetch("/api/question-banks", {
+    return safeFetchJson<QuestionBank>("/api/question-banks", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, description }),
     });
-    const json = await res.json();
-    if (json.code !== 0) throw new Error(json.message);
-    return json.data;
   },
 
   // PUT /api/question-banks/:id
   async update(id: number, name: string, description?: string): Promise<QuestionBank> {
-    const res = await fetch(`/api/question-banks/${id}`, {
+    return safeFetchJson<QuestionBank>(`/api/question-banks/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, description }),
     });
-    const json = await res.json();
-    if (json.code !== 0) throw new Error(json.message);
-    return json.data;
   },
 
   // DELETE /api/question-banks/:id
   async delete(id: number): Promise<void> {
-    const res = await fetch(`/api/question-banks/${id}`, {
+    await safeFetchJson<void>(`/api/question-banks/${id}`, {
       method: "DELETE",
     });
-    const json = await res.json();
-    if (json.code !== 0) throw new Error(json.message);
   },
 };
