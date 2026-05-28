@@ -376,4 +376,58 @@ sudo systemctl restart nginx
 
 ---
 
-至此，大功告成！您现在可以在浏览器中输入服务器域名或公网外网 IP，即可享受本应用提供的高效刷题、轻松背题和完美的双向数据备份与恢复体验！
+## ☁️ 方案二：Vercel + Supabase (PostgreSQL) 极客托管指南
+
+如果您不希望自行维护独立的物理 Linux 服务器，你可以选择将项目直接托管在 **Vercel** 平台，并搭配 **Supabase (PostgreSQL)** 云端数据库。这具有**零运维成本、高保真弹性并发、自动化冷备容灾**等极佳架构体验。
+
+---
+
+### Step 1. 获取 Supabase 云数据库凭证
+
+1. 登录 [Supabase 官网](https://supabase.com/)，创建一个全新的 PostgreSQL 实例。
+2. 进入 **Project Settings -> Database -> Connection Strings** 选取 **URI** 格式。
+3. 请将获取到的连接字符串分别填入对应环境变量中（密码需要替换为您创建项目时的实体密码）：
+   - **Transaction-mode pooler** 链接：通常运行在 `6543` 端口，带有 `?pgbouncer=true`，赋予 `DATABASE_URL` 使用。
+   - **Session-mode/Direct** 直接物理链接：通常运行在 `5432` 端口，赋予 `DIRECT_URL` 使用（用于高保真运行 schema 升级）。
+
+---
+
+### Step 2. 向云数据库同步表结构 (Prisma Push)
+
+既然我们的数据驱动设计已升级到通用的 `postgresql` 规范，我们需要在发布前端前，将数据关联表结构载入 Supabase：
+
+1. 打开您的本地开发终端或 AI Studio 内置控制台，配置或验证当前环境文件（如 `.env`）连接就绪：
+   ```bash
+   DATABASE_URL="postgresql://postgres.ntabdyubbkpjwkkwiruz:[YOUR-PASSWORD]@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
+   DIRECT_URL="postgresql://postgres.ntabdyubbkpjwkkwiruz:[YOUR-PASSWORD]@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres"
+   ```
+2. 运行下行指令进行底层大表一键高保真直接生成：
+   ```bash
+   npx prisma db push
+   ```
+   *（控制台显示 ✔ Generated Prisma Client 并且推送完毕后，云端数据库已完美同步就绪！）*
+
+---
+
+### Step 3. 部署到 Vercel 开发者控制台
+
+1. 将当前项目推送到您的 **GitHub/GitLab** 托管仓库。
+2. 登录 [Vercel 官网](https://vercel.com/)，选择 **Add New -> Project** 导入您的主仓库。
+3. 打开 **Environment Variables** 选项折叠面板，加入三个必配环境变量：
+   - `DATABASE_URL`：填上 Supabase 获取的 Pooler 模式连接串（即带 pgbouncer 参数的 `6543` 端口配置）
+   - `DIRECT_URL`：填上 Supabase 的直连直达连接串（`5432` 端口配置）
+   - `GEMINI_API_KEY`：填入您的 Google Gemini AI API KEY（提供详情页超智能大模型考点直接生成）
+4. 项目配置的 `npm run build` 默认会自动执行 `prisma generate && next build` 进行一站式生成。
+5. 点击 **Deploy**，等待几十秒静默构建上线！
+
+---
+
+### Step 4. 满血复活数据导入
+
+初始化的云数据库是纯净无害状态，如何快速找回自己的原先数据：
+1. 访问您新部署完毕的 Vercel 域名子页面，直达后台的 **「备份恢复」 (Backup & Restore Center)** 页面。
+2. 直接拖放、选取拖拽您先前本地备份好的 JSON 刷题文件包或多 Sheet 格式 Excel 整体文件，点击一键恢复！一切收藏夹、错题本、毫秒级历史全状态在云端恢复运作。
+
+---
+
+至此，大功告成！您可以依据业务诉求自由选择传统 Linux 服务器或现代化 Vercel 云原生服务进行一键发布，祝您的面试辅导体系一路长虹！
