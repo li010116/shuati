@@ -594,10 +594,10 @@ export default function QuestionsPage() {
                       </div>
 
                       {/* Control row operations drawer */}
-                      <div className="flex flex-wrap items-center justify-end gap-2 pt-1 border-t border-neutral-100">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-neutral-100">
                         <button
                           onClick={() => handleAddToWrong(q)}
-                          className="px-2.5 py-1 text-[10.5px] font-semibold rounded-lg border border-neutral-200 text-neutral-600 bg-white hover:bg-rose-50 hover:text-rose-600 active:scale-95 transition-all flex items-center gap-1"
+                          className="w-full py-1.5 px-2 text-[11px] font-semibold rounded-lg border border-neutral-200 text-neutral-600 bg-white hover:bg-rose-50 hover:text-rose-600 active:scale-95 transition-all flex items-center justify-center gap-1"
                           title="计入错题"
                         >
                           <AlertOctagon className="w-3.5 h-3.5" />
@@ -606,7 +606,7 @@ export default function QuestionsPage() {
 
                         <Link
                           href={`/questions/${q.id}`}
-                          className="px-2.5 py-1 text-[10.5px] font-semibold rounded-lg border border-neutral-200 text-neutral-600 bg-white hover:bg-blue-50 hover:text-blue-600 active:scale-95 transition-all flex items-center gap-1 inline-flex items-center"
+                          className="w-full py-1.5 px-2 text-[11px] font-semibold rounded-lg border border-neutral-200 text-neutral-600 bg-white hover:bg-blue-50 hover:text-blue-600 active:scale-95 transition-all flex items-center justify-center gap-1 inline-flex"
                           title="查看详情"
                         >
                           <Eye className="w-3.5 h-3.5" />
@@ -615,7 +615,7 @@ export default function QuestionsPage() {
 
                         <button
                           onClick={() => openEditModal(q)}
-                          className="px-2.5 py-1 text-[10.5px] font-semibold rounded-lg border border-neutral-200 text-neutral-600 bg-white hover:bg-amber-50 hover:text-amber-600 active:scale-95 transition-all flex items-center gap-1"
+                          className="w-full py-1.5 px-2 text-[11px] font-semibold rounded-lg border border-neutral-200 text-neutral-600 bg-white hover:bg-amber-50 hover:text-amber-600 active:scale-95 transition-all flex items-center justify-center gap-1"
                           title="编辑修改"
                         >
                           <Edit2 className="w-3.5 h-3.5" />
@@ -624,7 +624,7 @@ export default function QuestionsPage() {
 
                         <button
                           onClick={() => handleDeleteClick(q.id, q.title)}
-                          className="px-2.5 py-1 text-[10.5px] font-semibold rounded-lg border border-neutral-200 text-rose-500 bg-white hover:bg-rose-50 active:scale-95 transition-all flex items-center gap-1"
+                          className="w-full py-1.5 px-2 text-[11px] font-semibold rounded-lg border border-neutral-200 text-rose-500 bg-white hover:bg-rose-50 active:scale-95 transition-all flex items-center justify-center gap-1"
                           title="物理删除"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
