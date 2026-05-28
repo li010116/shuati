@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Layout } from "@/components/Layout";
 import { questionApi, Question, QuestionQueryParams } from "@/src/api/questionApi";
@@ -36,7 +36,10 @@ export default function ReviewPage() {
   const [masteryStatus, setMasteryStatus] = useState("");
 
   const [total, setTotal] = useState(0);
-  const [limit, setLimit] = useState(150);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   const initData = async () => {
     try {
@@ -51,10 +54,11 @@ export default function ReviewPage() {
     try {
       setLoading(true);
       setError("");
+      setCurrentPage(1);
 
       const params: QuestionQueryParams = {
         page: 1,
-        pageSize: limit, // Larger size for rapid scroll review feed
+        pageSize: 40,
         keyword: keyword.trim(),
         questionBankId: selectedBankId || undefined,
         primaryCategory: primaryCategory.trim() || undefined,
@@ -72,6 +76,37 @@ export default function ReviewPage() {
     }
   };
 
+  const loadMoreQuestions = async () => {
+    if (loading || loadingMore || questions.length >= total) return;
+    try {
+      setLoadingMore(true);
+      const nextPage = currentPage + 1;
+
+      const params: QuestionQueryParams = {
+        page: nextPage,
+        pageSize: 40,
+        keyword: keyword.trim(),
+        questionBankId: selectedBankId || undefined,
+        primaryCategory: primaryCategory.trim() || undefined,
+        difficulty: difficulty || undefined,
+        masteryStatus: masteryStatus || undefined,
+      };
+
+      const res = await questionApi.query(params);
+      setQuestions((prev) => {
+        const existingIds = new Set(prev.map((q) => q.id));
+        const uniqueNew = res.list.filter((q) => !existingIds.has(q.id));
+        return [...prev, ...uniqueNew];
+      });
+      setTotal(res.total);
+      setCurrentPage(nextPage);
+    } catch (err: any) {
+      console.error(err);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
   useEffect(() => {
     const run = async () => {
       await initData();
@@ -84,11 +119,34 @@ export default function ReviewPage() {
       await loadQuestions();
     };
     run();
-  }, [selectedBankId, primaryCategory, difficulty, masteryStatus, limit]);
+  }, [selectedBankId, primaryCategory, difficulty, masteryStatus]);
+
+  useEffect(() => {
+    if (loading || loadingMore || questions.length >= total) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          loadMoreQuestions();
+        }
+      },
+      { rootMargin: "300px" }
+    );
+
+    const currentTarget = loadMoreRef.current;
+    if (currentTarget) {
+      observer.observe(currentTarget);
+    }
+
+    return () => {
+      if (currentTarget) {
+        observer.unobserve(currentTarget);
+      }
+    };
+  }, [loading, loadingMore, questions.length, total, currentPage, keyword, selectedBankId, primaryCategory, difficulty, masteryStatus]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setLimit(150);
     loadQuestions();
   };
 
@@ -181,7 +239,7 @@ export default function ReviewPage() {
               <label className="text-[10px] font-bold text-neutral-400 uppercase">源题库仓</label>
               <select
                 value={selectedBankId}
-                onChange={(e) => { setSelectedBankId(e.target.value); setLimit(150); }}
+                onChange={(e) => setSelectedBankId(e.target.value)}
                 className="w-full p-2 border border-neutral-200 rounded-md bg-white focus:outline-hidden text-xs"
               >
                 <option value="">全部题库</option>
@@ -196,7 +254,7 @@ export default function ReviewPage() {
               <input
                 type="text"
                 value={primaryCategory}
-                onChange={(e) => { setPrimaryCategory(e.target.value); setLimit(150); }}
+                onChange={(e) => setPrimaryCategory(e.target.value)}
                 placeholder="模糊定位分类..."
                 className="w-full p-2 border border-neutral-200 rounded-md bg-white focus:outline-hidden text-xs"
               />
@@ -206,7 +264,7 @@ export default function ReviewPage() {
               <label className="text-[10px] font-bold text-neutral-400 uppercase">基础难度</label>
               <select
                 value={difficulty}
-                onChange={(e) => { setDifficulty(e.target.value); setLimit(150); }}
+                onChange={(e) => setDifficulty(e.target.value)}
                 className="w-full p-2 border border-neutral-200 rounded-md bg-white focus:outline-hidden text-xs"
               >
                 <option value="">全部难度</option>
@@ -220,7 +278,7 @@ export default function ReviewPage() {
               <label className="text-[10px] font-bold text-neutral-400 uppercase">掌握程度</label>
               <select
                 value={masteryStatus}
-                onChange={(e) => { setMasteryStatus(e.target.value); setLimit(150); }}
+                onChange={(e) => setMasteryStatus(e.target.value)}
                 className="w-full p-2 border border-neutral-200 rounded-md bg-white focus:outline-hidden text-xs"
               >
                 <option value="">全部状态</option>
@@ -371,18 +429,27 @@ export default function ReviewPage() {
               );
             })}
 
-            {/* Load More Button */}
-            {!loading && questions.length < total && (
-              <div className="flex justify-center pt-4 pb-8">
+            {/* Load More trigger element */}
+            <div ref={loadMoreRef} className="pt-4 pb-8 flex flex-col items-center justify-center">
+              {loadingMore ? (
+                <div className="flex items-center gap-2 text-xs text-neutral-400 py-2">
+                  <div className="w-4 h-4 border-2 border-neutral-900 border-t-transparent rounded-full animate-spin"></div>
+                  <span>正在动态加载更多精品题目...</span>
+                </div>
+              ) : questions.length < total ? (
                 <button
-                  onClick={() => setLimit((prev) => prev + 150)}
+                  onClick={loadMoreQuestions}
                   className="px-6 py-2.5 bg-neutral-950 hover:bg-neutral-800 text-white border text-xs font-bold rounded-lg transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
                 >
                   <span>加载更多题目</span>
                   <span className="text-[10px] text-neutral-300 font-mono">({questions.length} / {total} 道)</span>
                 </button>
-              </div>
-            )}
+              ) : (
+                <p className="text-xs text-neutral-300 select-none pb-4 font-medium tracking-wide">
+                  — 已全盘展示全部 {total} 道速记题目 —
+                </p>
+              )}
+            </div>
           </div>
         )}
       </div>

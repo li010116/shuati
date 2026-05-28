@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Layout } from "@/components/Layout";
 import { questionApi, Question, QuestionQueryParams } from "@/src/api/questionApi";
@@ -30,7 +30,10 @@ export default function WrongBookPage() {
   const [selectedBankId, setSelectedBankId] = useState("");
 
   const [total, setTotal] = useState(0);
-  const [limit, setLimit] = useState(150);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   // Revealed answer state map
   const [revealedIds, setRevealedIds] = useState<Record<number, boolean>>({});
@@ -51,10 +54,11 @@ export default function WrongBookPage() {
     try {
       setLoading(true);
       setError("");
+      setCurrentPage(1);
 
       const params: QuestionQueryParams = {
         page: 1,
-        pageSize: limit, // Grab error records to lists
+        pageSize: 40,
         questionBankId: selectedBankId || undefined,
         hasWrong: "true", // Strictly wrongCount > 0
       };
@@ -72,6 +76,35 @@ export default function WrongBookPage() {
     }
   };
 
+  const loadMoreQuestions = async () => {
+    if (loading || loadingMore || questions.length >= total) return;
+    try {
+      setLoadingMore(true);
+      const nextPage = currentPage + 1;
+
+      const params: QuestionQueryParams = {
+        page: nextPage,
+        pageSize: 40,
+        questionBankId: selectedBankId || undefined,
+        hasWrong: "true",
+      };
+
+      const res = await questionApi.query(params);
+      setQuestions((prev) => {
+        const existingIds = new Set(prev.map((q) => q.id));
+        const uniqueNew = res.list.filter((q) => !existingIds.has(q.id));
+        // Sort combined list by wrongCount descending as requested
+        return [...prev, ...uniqueNew].sort((a, b) => b.wrongCount - a.wrongCount);
+      });
+      setTotal(res.total);
+      setCurrentPage(nextPage);
+    } catch (err: any) {
+      console.error(err);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
   useEffect(() => {
     const run = async () => {
       await initData();
@@ -84,7 +117,31 @@ export default function WrongBookPage() {
       await loadQuestions();
     };
     run();
-  }, [selectedBankId, limit]);
+  }, [selectedBankId]);
+
+  useEffect(() => {
+    if (loading || loadingMore || questions.length >= total) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          loadMoreQuestions();
+        }
+      },
+      { rootMargin: "300px" }
+    );
+
+    const currentTarget = loadMoreRef.current;
+    if (currentTarget) {
+      observer.observe(currentTarget);
+    }
+
+    return () => {
+      if (currentTarget) {
+        observer.unobserve(currentTarget);
+      }
+    };
+  }, [loading, loadingMore, questions.length, total, currentPage, selectedBankId]);
 
   const toggleRevealAnswer = async (id: number) => {
     const isRevealed = !!revealedIds[id];
@@ -160,7 +217,7 @@ export default function WrongBookPage() {
           <div className="w-full sm:w-auto">
             <select
               value={selectedBankId}
-              onChange={(e) => { setSelectedBankId(e.target.value); setLimit(150); }}
+              onChange={(e) => setSelectedBankId(e.target.value)}
               className="w-full px-3 py-2 border rounded-lg bg-white outline-hidden text-xs font-semibold focus:ring-1 focus:ring-blue-500 text-neutral-700"
             >
               <option value="">全部题库错题筛选</option>
@@ -316,18 +373,27 @@ export default function WrongBookPage() {
               );
             })}
 
-            {/* Load More Button */}
-            {!loading && questions.length < total && (
-              <div className="flex justify-center pt-4 pb-8">
+            {/* Load More trigger element */}
+            <div ref={loadMoreRef} className="pt-4 pb-8 flex flex-col items-center justify-center">
+              {loadingMore ? (
+                <div className="flex items-center gap-2 text-xs text-neutral-400 py-2">
+                  <div className="w-4 h-4 border-2 border-neutral-900 border-t-transparent rounded-full animate-spin"></div>
+                  <span>正在动态加载更多错题记录...</span>
+                </div>
+              ) : questions.length < total ? (
                 <button
-                  onClick={() => setLimit((prev) => prev + 150)}
+                  onClick={loadMoreQuestions}
                   className="px-6 py-2.5 bg-neutral-950 hover:bg-neutral-800 text-white border text-xs font-bold rounded-lg transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
                 >
                   <span>加载更多错题</span>
                   <span className="text-[10px] text-neutral-300 font-mono">({questions.length} / {total} 道)</span>
                 </button>
-              </div>
-            )}
+              ) : (
+                <p className="text-xs text-neutral-300 select-none pb-4 font-medium tracking-wide">
+                  — 已展示全部 {total} 道错题记录 —
+                </p>
+              )}
+            </div>
           </div>
         )}
         {/* Clear Wrong Record Confirmation Modal Popup */}
