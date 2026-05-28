@@ -9,6 +9,7 @@ import {
   Download,
   Upload,
   AlertTriangle,
+  AlertOctagon,
   FileSpreadsheet,
   FileJson,
   CheckCircle2,
@@ -36,6 +37,9 @@ export default function BackupPage() {
   const [isDragOver, setIsDragOver] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState<ImportBackupResponse | null>(null);
+
+  // Overwrite confirm modal state
+  const [showOverwriteConfirm, setShowOverwriteConfirm] = useState(false);
 
   // Error/Success status
   const [errorMsg, setErrorMsg] = useState("");
@@ -120,14 +124,12 @@ export default function BackupPage() {
     }
   };
 
-  const handleRestoreImport = async () => {
+  const handleRestoreImport = async (bypassConfirm = false) => {
     if (!selectedFile) return;
 
-    if (importMode === "overwrite") {
-      const doubleCheck = confirm(
-        "⚠️ ⚠️ ⚠️ 警告：当前选择的是【清空并覆写还原】！\n\n该动作将彻底删除系统现有的所有题库、面试题、错题和学习背题历史记录，并无法恢复！\n\n您确定要抹掉所有数据，开始还原吗？"
-      );
-      if (!doubleCheck) return;
+    if (importMode === "overwrite" && !bypassConfirm) {
+      setShowOverwriteConfirm(true);
+      return;
     }
 
     try {
@@ -135,6 +137,7 @@ export default function BackupPage() {
       setErrorMsg("");
       setSuccessMsg("");
       setImportResult(null);
+      setShowOverwriteConfirm(false);
 
       const res = await backupApi.importBackupFile(selectedFile, importMode);
       setImportResult(res);
@@ -422,7 +425,7 @@ export default function BackupPage() {
 
               {/* Submit Execute Restore button */}
               <button
-                onClick={handleRestoreImport}
+                onClick={() => handleRestoreImport()}
                 disabled={importing || !selectedFile}
                 className={`w-full mt-4 py-2.5 rounded-lg font-semibold shadow-xs transition-all flex items-center justify-center gap-1.5 ${
                   !selectedFile
@@ -527,6 +530,53 @@ export default function BackupPage() {
             </li>
           </ul>
         </div>
+        {/* Overwrite Confirm Modal Popup */}
+        {showOverwriteConfirm && (
+          <div className="fixed inset-0 bg-stone-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl border border-rose-200 max-w-md w-full p-6 space-y-4 shadow-xl">
+              <div className="flex items-center gap-3 text-rose-600">
+                <AlertOctagon className="w-8 h-8 flex-shrink-0" />
+                <div>
+                  <h3 className="font-bold text-sm text-neutral-900">
+                    警告：您选择的是【清空并覆写还原】！
+                  </h3>
+                  <p className="text-xs text-rose-600 font-medium mt-0.5">
+                    该动作影响极大，一旦执行系统现有数据将永久消失！
+                  </p>
+                </div>
+              </div>
+
+              <div className="text-xs text-neutral-500 bg-neutral-50 p-3 rounded-lg border leading-relaxed">
+                <p className="font-semibold text-neutral-800">
+                  执行该还原恢复将一瞬间：
+                </p>
+                <ul className="list-disc pl-4 mt-1 space-y-0.5 text-neutral-605">
+                  <li>彻底删除系统<strong>现有的所有题库、分类及配置信息</strong></li>
+                  <li>彻底物理销毁所有<strong>面试题及关联的所有解析、说明等</strong></li>
+                  <li>全部清除<strong>错题记录、刷题历史与记忆曲线等统计</strong></li>
+                  <li>无法撤销，数据不可找回！</li>
+                </ul>
+              </div>
+
+              <div className="flex gap-2.5 justify-end pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowOverwriteConfirm(false)}
+                  className="px-4 py-2 bg-neutral-100 text-neutral-600 font-semibold text-xs rounded-lg hover:bg-neutral-200"
+                >
+                  取消放弃
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleRestoreImport(true)}
+                  className="px-4 py-2 bg-rose-600 text-white font-semibold text-xs rounded-lg hover:bg-rose-700 shadow-sm shadow-rose-100"
+                >
+                  确定一键覆写还原
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </Layout>
   );

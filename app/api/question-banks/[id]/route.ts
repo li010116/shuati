@@ -66,12 +66,47 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
       return errorResponse("无效的题库ID");
     }
 
-    // Cascade is handled via schema relation annotations (onDelete: Cascade)
-    const deletedBank = await prisma.questionBank.delete({
+    // Check if the bank exists
+    const bank = await prisma.questionBank.findUnique({
       where: { id: bankId },
     });
+    if (!bank) {
+      return errorResponse("该题库不存在或已被删除", 404);
+    }
 
-    return successResponse(deletedBank, "题库删除成功");
+    // Secure database update using a unified Transaction to manually delete cascade children.
+    // This circumvents physical DB level constraint problems and foreign-key inconsistencies.
+    await prisma.$transaction(async (tx) => {
+      // 1. Clear association history: ReviewRecords linked to questions of this bank
+      await tx.reviewRecord.deleteMany({
+        where: {
+          question: {
+            questionBankId: bankId,
+          },
+        },
+      });
+
+      // 2. Clear all questions belonging to this bank
+      await tx.question.deleteMany({
+        where: {
+          questionBankId: bankId,
+        },
+      });
+
+      // 3. Clear all excel batches history data of this bank
+      await tx.importBatch.deleteMany({
+        where: {
+          questionBankId: bankId,
+        },
+      });
+
+      // 4. Delete the target parent question bank itself
+      await tx.questionBank.delete({
+        where: { id: bankId },
+      });
+    });
+
+    return successResponse(bank, "题库及相关联的数据已一键彻底级联删除成功");
   } catch (err: any) {
     return errorResponse(err.message || "删除题库失败");
   }

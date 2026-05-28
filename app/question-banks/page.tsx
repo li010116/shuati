@@ -54,6 +54,9 @@ export default function QuestionBanksPage() {
   const [detailsBank, setDetailsBank] = useState<QuestionBank | null>(null);
   const [detailsStats, setDetailsStats] = useState<StatOverview | null>(null);
 
+  // Deletion state variables
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
+
   const loadData = async () => {
     try {
       setLoading(true);
@@ -114,13 +117,18 @@ export default function QuestionBanksPage() {
     }
   };
 
-  const handleDelete = async (id: number, name: string) => {
-    const doubleCheck = confirm(`确定删除题库「${name}」及其下的所有面试题与错题、收藏记录吗？此操作不可撤销！`);
-    if (!doubleCheck) return;
+  const handleDeleteClick = (id: number, name: string) => {
+    setDeleteTarget({ id, name });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    const { id, name } = deleteTarget;
 
     try {
       setError("");
       setMessage("");
+      setDeleteTarget(null);
       await questionBankApi.delete(id);
       setMessage(`题库 ${name} 已彻底删除！`);
       if (detailsBank?.id === id) {
@@ -307,7 +315,7 @@ export default function QuestionBanksPage() {
                               <Edit2 className="w-3.5 h-3.5" />
                             </button>
                             <button
-                              onClick={() => handleDelete(bank.id, bank.name)}
+                              onClick={() => handleDeleteClick(bank.id, bank.name)}
                               className="p-1.5 text-neutral-500 hover:text-rose-600 rounded bg-neutral-50 border border-neutral-100"
                               title="彻底删除"
                             >
@@ -611,6 +619,52 @@ export default function QuestionBanksPage() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Bank Confirmation Modal Popup */}
+        {deleteTarget && (
+          <div className="fixed inset-0 bg-stone-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl border border-rose-200 max-w-md w-full p-6 space-y-4 shadow-xl">
+              <div className="flex items-center gap-3 text-rose-600">
+                <AlertOctagon className="w-8 h-8 flex-shrink-0" />
+                <div>
+                  <h3 className="font-bold text-sm text-neutral-900">
+                    确定删除题库「{deleteTarget.name}」吗？
+                  </h3>
+                  <p className="text-xs text-rose-600 font-medium mt-0.5">
+                    此操作极其危险且不可逆！
+                  </p>
+                </div>
+              </div>
+
+              <div className="text-xs text-neutral-500 bg-neutral-50 p-3 rounded-lg border leading-relaxed">
+                删除该题库将在一瞬间<strong>级联清除</strong>：
+                <ul className="list-disc pl-4 mt-1 space-y-0.5 text-neutral-600">
+                  <li>题库本身的所有配置属性</li>
+                  <li>题库所含的全部<strong>面试题（以及关联解析等数据）</strong></li>
+                  <li>所有关联题目的<strong>错题记录与复习间隔时间</strong></li>
+                  <li>用户针对该题库的<strong>收藏卡片记录</strong></li>
+                </ul>
+              </div>
+
+              <div className="flex gap-2.5 justify-end pt-2">
+                <button
+                  type="button"
+                  onClick={() => setDeleteTarget(null)}
+                  className="px-4 py-2 bg-neutral-100 text-neutral-600 font-semibold text-xs rounded-lg hover:bg-neutral-200"
+                >
+                  取消放弃
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDelete}
+                  className="px-4 py-2 bg-rose-600 text-white font-semibold text-xs rounded-lg hover:bg-rose-700 shadow-sm shadow-rose-100"
+                >
+                  确定一键彻底删除
+                </button>
+              </div>
             </div>
           </div>
         )}

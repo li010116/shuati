@@ -32,6 +32,9 @@ export default function WrongBookPage() {
   // Revealed answer state map
   const [revealedIds, setRevealedIds] = useState<Record<number, boolean>>({});
 
+  // Clearing state variables
+  const [clearTarget, setClearTarget] = useState<{ id: number; title: string } | null>(null);
+
   const initData = async () => {
     try {
       const bList = await questionBankApi.getAll();
@@ -98,20 +101,25 @@ export default function WrongBookPage() {
         prev.map((q) => (q.id === id ? { ...q, masteryStatus: status } : q))
       );
     } catch (e: any) {
-      alert(`更新更错掌握度失败: ${e.message}`);
+      setError(`更新错题掌握度失败: ${e.message}`);
     }
   };
 
-  const handleClearWrong = async (id: number, title: string) => {
-    const check = confirm(`确定从错题集中清除这道题目「${title}」的记录吗？会将错题次数清理归零。`);
-    if (!check) return;
+  const handleClearWrongClick = (id: number, title: string) => {
+    setClearTarget({ id, title });
+  };
+
+  const handleConfirmClearWrong = async () => {
+    if (!clearTarget) return;
+    const { id } = clearTarget;
 
     try {
       setError("");
       setMessage("");
+      setClearTarget(null);
       await questionApi.clearWrong(id);
       setMessage("已从错题集中成功移出！");
-      setTimeout(() => setMessage(""), 2000);
+      setTimeout(() => setMessage(""), 2200);
       loadQuestions();
     } catch (err: any) {
       setError(err.message || "清除错题计入发生异常");
@@ -292,7 +300,7 @@ export default function WrongBookPage() {
                       </button>
 
                       <button
-                        onClick={() => handleClearWrong(q.id, q.title)}
+                        onClick={() => handleClearWrongClick(q.id, q.title)}
                         className="p-1 px-2.5 bg-neutral-900 text-white hover:bg-neutral-800 rounded-md flex items-center gap-1 font-semibold text-[10.5px] transition-all"
                         title="攻克并消除错误指标"
                       >
@@ -303,6 +311,53 @@ export default function WrongBookPage() {
                 </div>
               );
             })}
+          </div>
+        )}
+        {/* Clear Wrong Record Confirmation Modal Popup */}
+        {clearTarget && (
+          <div className="fixed inset-0 bg-stone-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl border border-neutral-200 max-w-md w-full p-6 space-y-4 shadow-xl">
+              <div className="flex items-center gap-3 text-neutral-800">
+                <AlertOctagon className="w-8 h-8 flex-shrink-0 text-amber-500" />
+                <div>
+                  <h3 className="font-bold text-sm text-neutral-900">
+                    确定移出这道错题记录吗？
+                  </h3>
+                  <p className="text-xs text-neutral-500 mt-0.5">
+                    这代表您已攻克此高频考察考点！
+                  </p>
+                </div>
+              </div>
+
+              <div className="text-xs text-neutral-500 bg-neutral-50 p-3 rounded-lg border leading-relaxed">
+                题目名称：<strong className="text-neutral-800 font-semibold">{clearTarget.title}</strong>
+                <p className="mt-2 text-neutral-600">
+                  移出本题将：
+                </p>
+                <ul className="list-disc pl-4 mt-1 space-y-0.5 text-neutral-600">
+                  <li>将这道题目的<strong>累计错题次数清零归位</strong></li>
+                  <li>本题将不再进入“高频错题集”中进行重温</li>
+                  <li>这 <strong>绝不会</strong> 物理删除题库中的面试题，您可以正常在练习仓中复习它</li>
+                </ul>
+              </div>
+
+              <div className="flex gap-2.5 justify-end pt-2">
+                <button
+                  type="button"
+                  onClick={() => setClearTarget(null)}
+                  className="px-4 py-2 bg-neutral-100 text-neutral-600 font-semibold text-xs rounded-lg hover:bg-neutral-200"
+                >
+                  取消放弃
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmClearWrong}
+                  className="px-4 py-2 bg-neutral-900 text-white font-semibold text-xs rounded-lg hover:bg-neutral-800 shadow-sm"
+                >
+                  确定一键移出归零
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

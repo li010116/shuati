@@ -110,9 +110,17 @@ export async function DELETE(req: NextRequest, { params }: RouteParams) {
       return errorResponse("题目不存在或已删去", 404);
     }
 
-    // Delete question
-    const deletedQ = await prisma.question.delete({
-      where: { id: qId },
+    // Delete associated ReviewRecord rows and the question in a safe Prisma Transaction
+    const deletedQ = await prisma.$transaction(async (tx) => {
+      // 1. Delete associated ReviewRecords
+      await tx.reviewRecord.deleteMany({
+        where: { questionId: qId },
+      });
+
+      // 2. Delete the question itself
+      return await tx.question.delete({
+        where: { id: qId },
+      });
     });
 
     // Update parent totalCount

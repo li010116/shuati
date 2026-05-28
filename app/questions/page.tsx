@@ -52,6 +52,9 @@ export default function QuestionsPage() {
   const [showModal, setShowModal] = useState(false);
   const [editTargetId, setEditTargetId] = useState<number | null>(null);
 
+  // Deletion state variables
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number; title: string } | null>(null);
+
   // Form attributes
   const [formBankId, setFormBankId] = useState("");
   const [formQuestionId, setFormQuestionId] = useState("");
@@ -160,13 +163,18 @@ export default function QuestionsPage() {
     setPage(1);
   };
 
-  const handleDelete = async (id: number, title: string) => {
-    const check = confirm(`确定删除题目「${title}」吗？相关学习复习记录会级联删除！`);
-    if (!check) return;
+  const handleDeleteClick = (id: number, title: string) => {
+    setDeleteTarget({ id, title });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    const { id } = deleteTarget;
 
     try {
       setError("");
       setMessage("");
+      setDeleteTarget(null);
       await questionApi.delete(id);
       setMessage("题目删除成功！");
       loadQuestions();
@@ -629,7 +637,7 @@ export default function QuestionsPage() {
                           </button>
 
                           <button
-                            onClick={() => handleDelete(q.id, q.title)}
+                            onClick={() => handleDeleteClick(q.id, q.title)}
                             className="p-1 rounded border border-neutral-200 text-neutral-400 hover:text-rose-600 select-none align-middle"
                             title="物理删除"
                           >
@@ -884,6 +892,54 @@ export default function QuestionsPage() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Question Confirmation Modal Popup */}
+        {deleteTarget && (
+          <div className="fixed inset-0 bg-stone-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-xl border border-rose-200 max-w-md w-full p-6 space-y-4 shadow-xl">
+              <div className="flex items-center gap-3 text-rose-600">
+                <AlertOctagon className="w-8 h-8 flex-shrink-0" />
+                <div>
+                  <h3 className="font-bold text-sm text-neutral-900">
+                    确定删除题目吗？
+                  </h3>
+                  <p className="text-xs text-rose-600 font-medium mt-0.5">
+                    此操作极其危险且不可逆！
+                  </p>
+                </div>
+              </div>
+
+              <div className="text-xs text-neutral-500 bg-neutral-50 p-3 rounded-lg border leading-relaxed">
+                题目名称：<strong className="text-neutral-800 font-semibold">{deleteTarget.title}</strong>
+                <p className="mt-2 text-neutral-650">
+                  彻底物理删除这道题目将级联清除：
+                </p>
+                <ul className="list-disc pl-4 mt-1 space-y-0.5 text-neutral-600">
+                  <li>本题的所有详细解答内容及属性</li>
+                  <li>本题关联的所有<strong>历史刷题、错题累计记录</strong></li>
+                  <li>本题当前的<strong>收藏状态属性</strong></li>
+                </ul>
+              </div>
+
+              <div className="flex gap-2.5 justify-end pt-2">
+                <button
+                  type="button"
+                  onClick={() => setDeleteTarget(null)}
+                  className="px-4 py-2 bg-neutral-100 text-neutral-600 font-semibold text-xs rounded-lg hover:bg-neutral-200"
+                >
+                  取消放弃
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmDelete}
+                  className="px-4 py-2 bg-rose-600 text-white font-semibold text-xs rounded-lg hover:bg-rose-700 shadow-sm shadow-rose-100"
+                >
+                  确定彻底物理删除
+                </button>
+              </div>
             </div>
           </div>
         )}

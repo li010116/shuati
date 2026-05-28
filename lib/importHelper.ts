@@ -81,21 +81,35 @@ export async function processExcelImport(
     return result;
   }
 
-  // Get current max auto-gen ID helper
+  // 1. Get all existing questions for this bank in a single batch query
   const existingQuestions = await prisma.question.findMany({
     where: { questionBankId },
-    select: { questionId: true },
+    select: { id: true, questionId: true },
+  });
+
+  const existingMap = new Map<string, number>(); // questionId -> db internal id
+  existingQuestions.forEach(q => {
+    existingMap.set(q.questionId, q.id);
   });
 
   const questionIdSet = new Set(existingQuestions.map(q => q.questionId));
   let autoIdCounter = existingQuestions.length + 1;
 
+  // Arrays to hold prepared records for database writes
+  const toCreate: any[] = [];
+  const toUpdateMap = new Map<number, any>();
+  
+  // Track created indices to handle duplicates within the same upload file
+  const tempCreateMap = new Map<string, number>(); // questionId -> index in toCreate
+  const countedUpdates = new Set<number>();
+
+  // 2. Process rows sequentially in-memory
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
     const rowNum = i + 2; // Row number in Excel (header is row 1)
 
     try {
-      // 1. Core fields validation
+      // 2.1. Core fields validation
       const rawTitle = getValue(row, "题目", "title");
       const title = rawTitle ? String(rawTitle).trim() : "";
       
@@ -109,7 +123,7 @@ export async function processExcelImport(
         throw new Error(`第 ${rowNum} 行: 一级分类 不能为空`);
       }
 
-      // 2. Map optional columns with defaults
+      // 2.2. Map optional columns with defaults
       const rawQuestionId = getValue(row, "题目ID", "questionId");
       let questionId = rawQuestionId ? String(rawQuestionId).trim() : "";
       
@@ -170,68 +184,65 @@ export async function processExcelImport(
       const noteRaw = getValue(row, "备注", "note");
       const note = noteRaw ? String(noteRaw).trim() : null;
 
-      // 3. Database Sync: Upsert based on questionBankId + questionId
-      const existingQ = await prisma.question.findUnique({
-        where: {
-          questionBankId_questionId: {
-            questionBankId,
-            questionId,
-          },
-        },
-      });
+      const dataToSave = {
+        questionBankId,
+        questionId,
+        primaryCategory,
+        secondaryCategory,
+        title,
+        answer,
+        questionType,
+        importance,
+        difficulty,
+        tags,
+        sourcePage,
+        masteryStatus,
+        isFavorite,
+        wrongCount,
+        reviewCount,
+        lastReviewTime,
+        note,
+        isAnswerMissing,
+      };
 
-      if (existingQ) {
-        // Update existing question
-        await prisma.question.update({
-          where: { id: existingQ.id },
-          data: {
-            primaryCategory,
-            secondaryCategory,
-            title,
-            answer,
-            questionType,
-            importance,
-            difficulty,
-            tags,
-            sourcePage,
-            masteryStatus,
-            isFavorite,
-            wrongCount,
-            reviewCount,
-            lastReviewTime,
-            note,
-            isAnswerMissing,
-          },
+      const existingDbId = existingMap.get(questionId);
+      if (existingDbId !== undefined) {
+        // Prepare for update
+        toUpdateMap.set(existingDbId, {
+          primaryCategory,
+          secondaryCategory,
+          title,
+          answer,
+          questionType,
+          importance,
+          difficulty,
+          tags,
+          sourcePage,
+          masteryStatus,
+          isFavorite,
+          wrongCount,
+          reviewCount,
+          lastReviewTime,
+          note,
+          isAnswerMissing,
         });
-        result.updatedCount++;
-        result.successCount++;
+        if (!countedUpdates.has(existingDbId)) {
+          countedUpdates.add(existingDbId);
+          result.updatedCount++;
+          result.successCount++;
+        }
       } else {
-        // Create new question
-        await prisma.question.create({
-          data: {
-            questionBankId,
-            questionId,
-            primaryCategory,
-            secondaryCategory,
-            title,
-            answer,
-            questionType,
-            importance,
-            difficulty,
-            tags,
-            sourcePage,
-            masteryStatus,
-            isFavorite,
-            wrongCount,
-            reviewCount,
-            lastReviewTime,
-            note,
-            isAnswerMissing,
-          },
-        });
-        questionIdSet.add(questionId);
-        result.createdCount++;
-        result.successCount++;
+        // Prepare for create
+        const existingIndex = tempCreateMap.get(questionId);
+        if (existingIndex !== undefined) {
+          toCreate[existingIndex] = dataToSave;
+        } else {
+          toCreate.push(dataToSave);
+          tempCreateMap.set(questionId, toCreate.length - 1);
+          questionIdSet.add(questionId);
+          result.createdCount++;
+          result.successCount++;
+        }
       }
     } catch (err: any) {
       result.failCount++;
@@ -239,7 +250,35 @@ export async function processExcelImport(
     }
   }
 
-  // 4. Update the totalCount in QuestionBank
+  // 3. Batch DB Write: chunked createMany for creations
+  if (toCreate.length > 0) {
+    const CREATE_BATCH_SIZE = 1000;
+    for (let idx = 0; idx < toCreate.length; idx += CREATE_BATCH_SIZE) {
+      const chunk = toCreate.slice(idx, idx + CREATE_BATCH_SIZE);
+      await prisma.question.createMany({
+        data: chunk,
+      });
+    }
+  }
+
+  // 4. Batch DB Write: parallelized chunked updates for updates
+  if (toUpdateMap.size > 0) {
+    const UPDATE_BATCH_SIZE = 50;
+    const updateEntries = Array.from(toUpdateMap.entries()); // [id, data][]
+    for (let idx = 0; idx < updateEntries.length; idx += UPDATE_BATCH_SIZE) {
+      const chunk = updateEntries.slice(idx, idx + UPDATE_BATCH_SIZE);
+      await Promise.all(
+        chunk.map(([id, data]) =>
+          prisma.question.update({
+            where: { id },
+            data,
+          })
+        )
+      );
+    }
+  }
+
+  // 5. Update the totalCount in QuestionBank
   const count = await prisma.question.count({
     where: { questionBankId },
   });
@@ -249,7 +288,7 @@ export async function processExcelImport(
     data: { totalCount: count },
   });
 
-  // 5. Create the ImportBatch record
+  // 6. Create the ImportBatch record
   await prisma.importBatch.create({
     data: {
       questionBankId,
