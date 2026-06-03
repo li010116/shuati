@@ -1,230 +1,174 @@
-# 面试刷题宝典 (Interview Practice Companion)
+# 🎯 面试刷题宝典 (Smart Interview Practice Hub)
 
-一款支持多题库管理、Excel 极速批量导入的 **全栈移动端优先面试刷题 / 背题辅助系统**。采用模块化轻量架构，配以简洁优雅的极简白蓝面板设计，移动端与桌面端均可流畅使用。
+[![Next.js](https://img.shields.io/badge/Next.js-15+-black?style=flat-square&logo=next.design)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38bdf8?style=flat-square&logo=tailwind-css)](https://tailwindcss.com/)
+[![Prisma](https://img.shields.io/badge/Prisma-ORM-2d3748?style=flat-square&logo=prisma)](https://www.prisma.io/)
+[![Gemini](https://img.shields.io/badge/Powered_by-Gemini_AI-6b11ff?style=flat-square&logo=google-gemini)](https://ai.google.dev/)
 
----
-
-## 🚀 核心技术架构
-
-| 层级 | 技术选型 |
-| :--- | :--- |
-| **前端框架** | React 19 + Next.js 15 (App Router) + TypeScript |
-| **样式方案** | Tailwind CSS 4 |
-| **动效 & 图标** | `motion` (Framer Motion) + `lucide-react` 精致图标集 |
-| **数据库** | PostgreSQL（Supabase 云托管），通过 Prisma ORM 访问 |
-| **数据导入** | `xlsx` 工作表极速流计算提取库 |
-| **AI 辅导** | Google Gemini API（题目详情页 AI 考点解析与辅导） |
+面试刷题宝典是一款**移动端首选设计**、多维能力聚合、支持离线/备份的 **全栈智能型面试练习/背题辅助系统**。系统采用模块化轻量架构，配以简洁优雅、高对比度的 **Cosmic Minimalist** 极简夜空蓝面板设计，提供极致流畅、沉浸式的答题与提效体验。
 
 ---
 
-## 📂 项目目录结构
+## ✨ 核心亮点优势
 
-```
-shuati/
-├── app/                     # Next.js App Router 页面与 API 路由
-│   ├── page.tsx             # 首页看板 (Dashboard)
-│   ├── layout.tsx           # 根布局
-│   ├── globals.css          # 全局样式
-│   ├── question-banks/      # 题库管理页
-│   ├── questions/           # 题目列表页 & 题目详情页
-│   │   └── [id]/            # 单题详情页（含 AI 辅导）
-│   ├── review/              # 背题模式页
-│   ├── practice/            # 刷题模式页
-│   ├── wrong/               # 错题集页
-│   ├── favorites/           # 收藏夹页
-│   ├── import/              # Excel 导入页
-│   ├── backup/              # 备份恢复中心
-│   └── api/                 # API 路由
-│       ├── questions/       #   题目 CRUD
-│       ├── question-banks/  #   题库 CRUD & 导入
-│       ├── statistics/      #   统计数据（概览、分类、难度、导入批次）
-│       └── backup/          #   备份导出 & 导入恢复
-├── components/              # 可复用组件
-│   └── Layout.tsx           # 全局布局（顶栏 + 侧栏 + 移动端底部导航）
-├── src/api/                 # 前端 API 客户端封装
-├── lib/                     # 工具函数 & Prisma 客户端
-├── hooks/                   # 自定义 React Hooks
-├── prisma/
-│   └── schema.prisma        # Prisma 数据模型定义
-├── .env.example             # 环境变量模板
-└── package.json
-```
+*   📱 **双端极致适配**：提供桌面端「高密表格视图」与移动端「智能卡片流视图」。在手机端按钮分布与布局经高精度重构设计，拥有舒适流畅的触控体感。
+*   🚀 **Excel 格式宽容级秒导**：容错力超强的题库极感物理表格导入。支持自定义唯一判定项，一键增量合并/追加。
+*   🤖 **Gemini 服务端 AI 解析**：接入谷歌原厂 Gemini 智能大模型。深度一键秒解任何晦涩代码要点，为您的刷题思路保驾护航。
+*   💾 **全生命周期冷热备份**：支持高保真单库 Excel 二进制物理大表与系统级全链 JSON 配置文件的一键导出和合并覆盖恢复。
+*   🏠 **零配置 SQLite 运行**：本地调试无外置服务器依赖，一键运行生成数据库，简单高效。
+*   ☁️ **多目标平台高保真发布**：完美支持一键部署到标准 Linux 虚拟机（PM2 + Nginx）以及 Vercel + Supabase 云端轻量数据库平台。
 
 ---
 
-## 🎨 核心功能模块
+## 🛠️ 技术栈蓝图
 
-| # | 模块名称 | 路由 | 功能说明 |
-| :---: | :--- | :--- | :--- |
-| 1 | **首页看板** | `/` | 全局统计仪表盘：掌握率、今日复习、错题留存、各题库卡片与进度 |
-| 2 | **题库管理** | `/question-banks` | 新建 / 编辑 / 删除题库，查看各库统计，追加导入 Excel |
-| 3 | **Excel 导入** | `/import` | 创建新题库并一次性载入，或为已有题库增量追加（同 ID 覆盖更新） |
-| 4 | **题目列表** | `/questions` | 高级联合过滤器（分类 / 难度 / 掌握状态 / 星标 / 错题），支持直接操作 |
-| 5 | **题目详情** | `/questions/[id]` | 单题详情查看，含 AI 考点解析辅导 |
-| 6 | **背题模式** | `/review` | 卡片速背通道，不折叠答案，一键标记掌握状态 |
-| 7 | **刷题模式** | `/practice` | 逐题攻破：折叠答案、掌握反馈、私有备注、星标错题 |
-| 8 | **错题集** | `/wrong` | 错题频率倒序排列，一键清空攻破指标 |
-| 9 | **收藏夹** | `/favorites` | 星标高频知识点集合，直通专项刷题 |
-| 10 | **备份恢复** | `/backup` | JSON 全状态备份 / 多 Sheet Excel 备份；支持「合并追加」与「覆写还原」两种恢复模式 |
+*   **前端大盘**：React 19 + Next.js 15 (App Router)
+*   **开发语言**：TypeScript
+*   **页面美学**：Tailwind CSS v4 (高对比度暗黑 & 优雅亮白主题)
+*   **动态交互**：`motion/react` 极速自适应物理引擎
+*   **交互图标**：`lucide-react` 精致感单色符号集
+*   **数据库框架**：Prisma Client (通用型关系物理抽象)
+*   **内置运行库**：`xlsx` 多制式物理大表解析工具
+*   **安全认证**：本地/服务端 API 防御防护，Gemini 密钥防泄漏代理架构
 
 ---
 
-## 📋 Excel 表头列名映射规范
+## 📂 Excel 智能智能表头列名映射规范
 
-系统支持灵活的外部题库 Excel 导入。**首张工作表**或标签页名为 **「题库」** 的将被优先加载。
+系统提供超高的字段容错性能。导入时它会优先扫描 Excel 的 **首张工作表** (或标签名为 **「题库」**) 并依照如下对应名自动接管并入库：
 
-| Excel 列名 | 必填 | 类型 | 说明 |
-| :--- | :---: | :--- | :--- |
-| **题目** | ✅ | 文本 | 面试题内容 |
-| **一级分类** | ✅ | 文本 | 专项训练一级分类（如：*Java 基础*） |
-| **题目ID** | | 字符串 | 同一题库内唯一标识，同 ID 覆盖更新 |
-| **二级分类** | | 字符串 | 细分二级考点目录 |
-| **参考答案** | | 文本 | 详细答案，留空则标记为 *【待补充解答】* |
-| **题型** | | 文本 | 单选题 / 多选题 / 问答题（默认：`问答题`） |
-| **重要程度** | | 级别 | 普通 / 重要 / 极为重要（默认：`普通`） |
-| **难度** | | 级别 | 简单 / 普通 / 困难（默认：`普通`） |
-| **标签** | | 文本 | 逗号分隔的标签（如：*锁, 线程池*） |
-| **说明页码** | | 文本 | 来源出处（如：*凤凰架构 185 页*） |
-
----
-
-## 🛠️ 本地开发快速启动
-
-### 前置条件
-
-- **Node.js** v18 或更高版本
-- **npm**（随 Node.js 自带）
-- 一个 **Supabase** PostgreSQL 数据库实例（或其他 PostgreSQL 数据库）
-
-### Step 1. 克隆项目
-
-```bash
-git clone https://github.com/li010116/shuati.git
-cd shuati
-```
-
-### Step 2. 安装依赖
-
-```bash
-npm install
-```
-
-### Step 3. 配置环境变量
-
-复制模板并填入您的配置：
-
-```bash
-cp .env.example .env
-```
-
-在 `.env` 文件中填入以下内容：
-
-```env
-# Gemini AI API Key（用于题目详情页的 AI 辅导解析）
-GEMINI_API_KEY="your-gemini-api-key"
-
-# Supabase PostgreSQL 连接串（Pooler 模式，端口 6543）
-DATABASE_URL="postgresql://postgres.[ref]:[password]@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
-
-# Supabase PostgreSQL 直连串（用于 Schema 迁移，端口 5432）
-DIRECT_URL="postgresql://postgres.[ref]:[password]@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres"
-```
-
-> **💡 提示**：`DATABASE_URL` 使用带 pgbouncer 的连接池模式，`DIRECT_URL` 使用直连模式供 Prisma 执行 schema 变更。两者均可在 Supabase 控制台 → Project Settings → Database → Connection Strings 中获取。
-
-### Step 4. 同步数据库表结构
-
-```bash
-npx prisma db push
-```
-
-该命令会根据 `prisma/schema.prisma` 自动在云端 PostgreSQL 中创建所有数据表。
-
-### Step 5. 启动开发服务器
-
-```bash
-npm run dev
-```
-
-访问 [http://localhost:3000](http://localhost:3000) 即可开始使用。
+| Excel 物理表头名称 | 动作类型 | 类型与特性 | 映射到系统属性及回退 |
+| :--- | :--- | :--- | :--- |
+| **题目** | **核心必填** | 文本 `string` | 面试考题的核心提问或代码题面。 |
+| **一级分类** | **核心必填** | 文本 `string` | 专项练习和宏观看板汇总的重要面包屑（如：*Java基础*）。 |
+| **题目ID** | 可选属性 | 文本 `string` | 判定该题库中考题唯一性的关键 ID。**如遇同 ID 数据，将执行覆盖重写！** |
+| **二级分类** | 可选属性 | 文本 `string` | 微观考点（如：*多态*、*JVM垃圾收集*）。 |
+| **参考答案** | 可选属性 | 长文本 `text` | 正确解题路径与大段文字，若缺省将显示 **「待补答案」** 并挂起。 |
+| **题型** | 可选属性 | 单选文本 | 默认判定为 `问答题`，支持选择单选、多选等。 |
+| **重要程度** | 可选属性 | 指定评级 | 普通、重要、极为重要（默认值为 `普通`）。 |
+| **难度** | 可选属性 | 指定评级 | 简单、普通、困难（默认值为 `普通`）。 |
+| **标签** | 可选属性 | 列表文本 | 半角/全角分词分割（如：*多线程, 锁机制*）。 |
+| **说明页码** | 可选属性 | 引用字段 | 原书/原文定位参考（如：*《现代操作系统》142页*）。 |
 
 ---
 
-## 🌐 生产环境部署
+## 🪐 模块总览与精美视图划分
 
-### 方案一：Linux 服务器 + PM2 + Nginx
+1.  **宏观控制中心 / 首页看板 (Dashboard)**
+    拥有宏观多维度的刷题完成率汇总、自适应模糊题星空图表、各科目专项熟练度雷达与快捷功能传送门。
+2.  **题库高级工作仓 (Question Banks)**
+    全题库清单，支持一键清空专项库、整库物理擦除、一键 Excel 数据重叠追加及自建空白题库。
+3.  **极速导入控制台 (Data Import)**
+    双导入模式（支持整库直接覆盖重建，或选择指向已有库执行差异化覆盖更新），提供精准的异常校验提示。
+4.  **题目列表与检索看板 (Questions Explorer)**
+    支持多选、跨库联动、关键词模糊瞬时过滤，支持星标收藏、添加错题、删除、一键跳转深度解析等。
+5.  **极致卡片速记通道 (Review Deck)**
+    专门用于冲刺速记的卡片展示页。不折叠答案，方便刷题人目光快速扫描，支持一键切换掌握等级。
+6.  **物理滑块历练刷题 (Practice Playground)**
+    单题沉浸突破。支持点击展开答案页、输入个人私密笔记、触发错误频率统计与多色掌握状态评估。
+7.  **温故错题本 (Errata Booklet)**
+    收录所有 `错误频次 > 0` 的疑难案件。支持按错频倒序排序并能伴随突破复工自动调降、一键清零。
+8.  **星标收藏夹 (Bookmarks Drawer)**
+    高频重难点与常备冷门知识库一站集结，支持直接提取本章节进行针对性重点操练。
+9.  **全链路时序轴 (Time Trace)**
+    以毫秒级时间线绘制学习流水，全天答题、收藏、做错操作一目了然，科学量化日常努力。
+10. **多核备份重置核心 (System Management)**
+    高级备份控制舱。支持多 Sheets 融合导出下载标准 Excel 文件，或直接导出高压缩全库 JSON 存档，防丢防丢。
 
-适用于自行维护的 VPS / 云服务器（Ubuntu / Debian / CentOS）。
+---
 
-#### 1. 服务器环境准备
+## 🛠️ 项目本地部署与 SQLite 轻量化详解
 
-```bash
-# 安装 Node.js v18+（Ubuntu/Debian）
-curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-sudo apt-get install -y nodejs
+### 💡 我们是否需要单独下载安装 SQLite 数据库？
+**答：完全不需要！** 
+SQLite 是进程内型数据库，无需配置任何 Windows 服务或者 Linux 守护进程（无需像 MySQL 般设置一长串启动项和物理端口），它仅仅是当前工程文件夹中的一个物理文件。
+只要依靠本系统自带的 Prisma ORM 以及 Node.js 底层，在运行安装指令并生成表后即可，彻底免去繁复的环境搭建时间。
 
-# 安装 PM2 进程守护
-sudo npm install -g pm2
-```
+### 🔧 SQLite 出现 "Malformed" 表结构损坏的极速应急机制
+若因系统断电、进程强制杀灭导致 SQLite 的写锁卡死或出现 `Database image is malformed` 时：
+1.  **清空损坏的空壳文件**：直接在终端执行 `rm prisma/dev.db`（Windows 系统中可以直接手动删除 `prisma/dev.db` 物理文件）。
+2.  **重构纯净关系骨骼**：执行下列指令，一毫秒内系统数据库文件就会重生并同步就绪：
+    ```bash
+    npx prisma db push
+    ```
+3.  **重新填充**：在系统的 **「备份恢复」** 页面，重新导入您之前下载到本地的备用 Excel 或系统 JSON，即可毫秒级无损归位所有操作链和刷题进度！
 
-#### 2. 拉取代码并安装
+---
 
+## 🌐 经典 Linux 物理服务器一站部署
+
+本指引适用于 Ubuntu/Debian/CentOS 等各种标准 Linux 虚拟或物理机：
+
+### Step 1. 拉取代码
 ```bash
 cd /var/www
 git clone https://github.com/li010116/shuati.git
 cd shuati
-npm install
 ```
 
-#### 3. 配置环境变量
+### Step 2. 软件运行环境前置
+Next.js v15 推荐使用 **Node.js v18 或最新 v20 版本**。
+```bash
+# Nginx 网站主服务
+sudo apt-get update && sudo apt-get install -y nginx
 
+# PM2 进程守护
+sudo npm install -g pm2
+```
+
+### Step 3. 环境变量拼装
+将 `.env.example` 复制为物理 `.env`，并在此持久装载密钥：
 ```bash
 cp .env.example .env
 nano .env
-# 填入 GEMINI_API_KEY、DATABASE_URL、DIRECT_URL
+```
+写入配置参数：
+```env
+# Google Gemini 极速分析 AI 大模型凭证
+GEMINI_API_KEY="AIzaSyYourGeminiApiKeyHere"
+
+# 本地 SQLite 文件物理路由，不修改使用默认项即可
+DATABASE_URL="file:./dev.db"
 ```
 
-#### 4. 同步数据库 & 构建项目
-
+### Step 4. 依赖装填与 SQLite 通道畅通
 ```bash
-# 同步表结构到远程 PostgreSQL
-npx prisma db push
+# 1. 自动执行依赖安装
+npm install
 
-# 生产构建（内部会执行 prisma generate + next build）
+# 2. 刷新同步本地 SQLite 数据表结构
+npx prisma db push
+```
+
+### Step 5. 极致体积物理编译
+```bash
+# 对整个全栈工程进行一键流式优化打包
 npm run build
 ```
 
-#### 5. PM2 后台运行
-
+### Step 6. 使用 PM2 进行后台无缝值守
 ```bash
-# 启动服务并命名为 interview-companion
-pm2 start npm --name "interview-companion" -- run start -- -p 3000
+# 1. 在后台拉起 Next 进程并命名为 "interview-hub"
+pm2 start npm --name "interview-hub" -- run start -- -p 3000
 
-# 检查运行状态
-pm2 list
-
-# 配置开机自启
+# 2. 开机与自启动保存
 pm2 save
 pm2 startup
 ```
 
-#### 6. Nginx 反向代理
+---
 
-安装并配置 Nginx 将外网请求转发至内网 3000 端口：
+## ⚡ Nginx 反向代理配置
 
-```bash
-sudo apt-get install -y nginx
-sudo nano /etc/nginx/sites-available/default
-```
-
-**基础 HTTP 配置**：
-
+编辑 `/etc/nginx/sites-available/default` 站点文件：
 ```nginx
 server {
     listen 80;
-    server_name your-domain.com www.your-domain.com;
+    server_name your-domain.com; # 填入您的专属域名或者服务器物理公网 IP
 
-    client_max_body_size 50m;
+    # 放宽 Excel 物理大表的上传限制
+    client_max_body_size 64m;
 
     location / {
         proxy_pass http://127.0.0.1:3000;
@@ -238,41 +182,47 @@ server {
     }
 }
 ```
-
+热重载 Nginx：
 ```bash
 sudo nginx -t
-sudo systemctl restart nginx
+sudo systemctl reload nginx
 ```
 
-#### 7. 配置 SSL (HTTPS)
+---
 
-**方案 A — Let's Encrypt（推荐，免费自动续期）**：
+## 🔒 终极 SSL (HTTPS) 证书装填
 
+### Let's Encrypt 证书一键全托管（推荐，终身免费，到期自动续）
 ```bash
+# 运行安装 Certbot
 sudo apt-get install -y certbot python3-certbot-nginx
+
+# 运行一键配置并绑定证书
 sudo certbot --nginx -d your-domain.com -d www.your-domain.com
-sudo certbot renew --dry-run  # 测试自动续期
 ```
 
-**方案 B — 手动 SSL 证书**（腾讯云等云厂商证书）：
-
+### 腾讯云/阿里云 SSL 物理证书手动 Nginx 贴图方式
+如需手动安装云供应商免费下载的 `Nginx` 配套证书和 `.key` 密钥，可按照以下配置直接重构站点逻辑（支持 301 自动强制重定向），参考自 **[腾讯云官方 Nginx 部署指引](https://cloud.tencent.com/document/product/400/35244)**：
 ```nginx
-# HTTP 强制跳转 HTTPS
+# 1. 强制重定向 HTTP 到安全 HTTPS
 server {
     listen 80;
     server_name your-domain.com www.your-domain.com;
     return 301 https://$host$request_uri;
 }
 
-# HTTPS 站点
+# 2. HTTPS 安全处理核心
 server {
     listen 443 ssl;
     server_name your-domain.com www.your-domain.com;
 
-    client_max_body_size 50m;
+    client_max_body_size 64m;
 
+    # 证书绝密路径配置
     ssl_certificate /etc/nginx/ssl/your-domain.com_bundle.crt;
     ssl_certificate_key /etc/nginx/ssl/your-domain.com.key;
+
+    # 官方推荐的安全隔离属性
     ssl_session_timeout 5m;
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_ciphers ECDHE-RSA-AES128-GCM-SHA256:HIGH:!aNULL:!MD5:!RC4:!DHE;
@@ -291,96 +241,42 @@ server {
     }
 }
 ```
-
-#### PM2 常用运维命令
-
-```bash
-pm2 list                            # 查看服务列表
-pm2 monit                           # 实时监控仪表盘
-pm2 show interview-companion        # 查看应用详情
-pm2 restart interview-companion     # 重启应用
-pm2 stop interview-companion        # 停止应用
-pm2 delete interview-companion      # 从 PM2 中移除
-pm2 logs interview-companion        # 查看实时日志
-pm2 logs interview-companion --lines 100  # 查看最近 100 行
-pm2 flush                           # 清空日志缓存
-```
+保存好后运行 `nginx -t && systemctl reload nginx` 即时生效。
 
 ---
 
-### 方案二：Vercel + Supabase 云原生部署
+## ☁️ Vercel + Supabase (PostgreSQL) 极客极速云端部署
 
-零运维、自动扩缩容的现代化托管方案。
+如果您不希望维护服务器、域名以及数据库硬件，此处的极客方式将是极好的方案。
 
-#### 1. 获取 Supabase 数据库凭证
+### 1. 激活 Supabase 专属 PostgreSQL 数据实例
+1.  登录 [Supabase 官方网站](https://supabase.com/) 自建一个纯空实例。
+2.  进入 **Project Settings -> Database -> Connection Strings** 拷贝出 URI。
+    *   **DATABASE_URL** (Pooler 模式，默认 `6543` 端口，带有 `?pgbouncer=true` 参数) —— 配置到环境变量中。
+    *   **DIRECT_URL** (直连 Session 模式，默认 `5432` 端口) —— 用于建表和 ORM 脚本流。
 
-1. 登录 [Supabase](https://supabase.com/)，创建 PostgreSQL 实例
-2. 进入 **Project Settings → Database → Connection Strings**
-3. 获取两个连接串：
-   - **Transaction mode pooler**（端口 `6543`，带 `?pgbouncer=true`）→ `DATABASE_URL`
-   - **Session mode / Direct**（端口 `5432`）→ `DIRECT_URL`
-
-#### 2. 同步表结构
-
-在本地终端中配置好 `.env` 后执行：
-
+### 2. 向云数据库同步表及主骨架
+本地终端上填好这对应两项：
+```env
+DATABASE_URL="postgresql://postgres.xxx:[YOUR-PASS]@aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
+DIRECT_URL="postgresql://postgres.xxx:[YOUR-PASS]@aws-1-ap-southeast-1.pooler.supabase.com:5432/postgres"
+```
+随后，在项目根目录快速运行表结构刷新同步指令：
 ```bash
 npx prisma db push
 ```
 
-#### 3. 部署到 Vercel
-
-1. 将项目推送到 **GitHub / GitLab** 仓库
-2. 登录 [Vercel](https://vercel.com/)，选择 **Add New → Project** 导入仓库
-3. 配置 **Environment Variables**：
-   - `DATABASE_URL` — Supabase pooler 连接串
-   - `DIRECT_URL` — Supabase 直连串
-   - `GEMINI_API_KEY` — Google Gemini API Key
-4. 点击 **Deploy**，等待构建完成
-
-> `npm run build` 会自动执行 `prisma db push && prisma generate && next build`，无需额外配置。
-
-#### 4. 数据恢复
-
-部署完成后访问 **「备份恢复」** 页面，导入先前备份的 JSON 或 Excel 文件，即可恢复所有刷题数据与学习轨迹。
+### 3. Vercel 开发者端一键发布
+1.  在 GitHub 新建您的仓库代码，并将当前代码 push 上去。
+2.  进入 [Vercel](https://vercel.com/) 控制台，点击 **Import** 您的这个仓库。
+3.  在 **Environment Variables** 选项下输入这三个配置，系统便会自动打包并接管上线：
+    *   `DATABASE_URL` (Supabase Pooler 连接链接)
+    *   `DIRECT_URL` (Supabase 直连连接链接)
+    *   `GEMINI_API_KEY` (您的谷歌 AI Gemini API key)
+4.  一切就绪后点击 **Deploy**，片刻之后应用即可实现真正的终身免费快速托管！
 
 ---
 
-## 🔧 常见问题
+## 🔒 隐私与许可
 
-### 数据库连接失败怎么办？
-
-1. 检查 `.env` 中 `DATABASE_URL` 和 `DIRECT_URL` 是否正确填写
-2. 确认 Supabase 项目是否处于活跃状态（免费套餐会在不活跃时暂停）
-3. 确认密码中的特殊字符已正确编码
-
-### 如何重置数据库？
-
-```bash
-# 清空所有数据并重建表结构
-npx prisma db push --force-reset
-
-# 重新生成 Prisma 客户端
-npx prisma generate
-```
-
-之后可通过 **「备份恢复」** 页面重新导入备份数据。
-
-### 如何更新已部署的项目？
-
-**Linux 服务器**：
-```bash
-cd /var/www/shuati
-git pull
-npm install
-npm run build
-pm2 restart interview-companion
-```
-
-**Vercel**：推送代码到 GitHub，Vercel 会自动触发重新部署。
-
----
-
-## 📄 开源许可
-
-本项目仅供学习交流使用。
+本项目完全开源，代码遵循 MIT 协议。本刷题系统在本地/单容器全链路处理您的数据，不会以任何方式泄露您的私钥和面试题库，让您可以安心刷题，成功拿下满意 Offer！

@@ -18,7 +18,8 @@ import {
   Layers,
   Sparkles,
   ExternalLink,
-  ChevronDown
+  ChevronDown,
+  Pin
 } from "lucide-react";
 
 export default function ReviewPage() {
@@ -27,6 +28,11 @@ export default function ReviewPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+
+  // Study Progress Bookmark States
+  const [lastReadId, setLastReadId] = useState<number | null>(null);
+  const [lastReadTitle, setLastReadTitle] = useState("");
+  const [lastReadCode, setLastReadCode] = useState("");
 
   // Filters State
   const [keyword, setKeyword] = useState("");
@@ -112,6 +118,20 @@ export default function ReviewPage() {
       await initData();
     };
     run();
+
+    // Retrieve saved study progress location from localStorage asynchronously on next tick
+    if (typeof window !== "undefined") {
+      const savedIdString = localStorage.getItem("review_last_id");
+      const savedTitle = localStorage.getItem("review_last_title");
+      const savedCode = localStorage.getItem("review_last_code");
+      if (savedIdString) {
+        setTimeout(() => {
+          setLastReadId(parseInt(savedIdString, 10));
+          if (savedTitle) setLastReadTitle(savedTitle);
+          if (savedCode) setLastReadCode(savedCode);
+        }, 0);
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -185,6 +205,84 @@ export default function ReviewPage() {
     }
   };
 
+  const handleSetLastRead = (q: Question) => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("review_last_id", q.id.toString());
+      localStorage.setItem("review_last_title", q.title);
+      localStorage.setItem("review_last_code", q.questionId || "");
+      setLastReadId(q.id);
+      setLastReadTitle(q.title);
+      setLastReadCode(q.questionId || "");
+      setMessage(`已标记当前背题进度：【${q.questionId || q.id}】`);
+      setTimeout(() => setMessage(""), 2500);
+    }
+  };
+
+  const handleClearLastRead = () => {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("review_last_id");
+      localStorage.removeItem("review_last_title");
+      localStorage.removeItem("review_last_code");
+      setLastReadId(null);
+      setLastReadTitle("");
+      setLastReadCode("");
+      setMessage("背题进度标记已清除");
+      setTimeout(() => setMessage(""), 2500);
+    }
+  };
+
+  const handleJumpToLastRead = async () => {
+    if (!lastReadId) return;
+
+    // 1. Try to find the element in DOM
+    const el = document.getElementById(`review-item-${lastReadId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("ring-4", "ring-indigo-500", "transition-all", "duration-500");
+      setTimeout(() => {
+        el.classList.remove("ring-4", "ring-indigo-500");
+      }, 2500);
+    } else {
+      // 2. Element is not present, probably due to pagination. Let's filter by item code automatically!
+      if (lastReadCode) {
+        setKeyword(lastReadCode);
+        setError(`【提醒】位置标记对应题目暂未在前部载入，系统已自动输入编号「${lastReadCode}」检索并展现！`);
+        setTimeout(() => setError(""), 6005);
+
+        try {
+          setLoading(true);
+          const params: QuestionQueryParams = {
+            page: 1,
+            pageSize: 40,
+            keyword: lastReadCode,
+          };
+          const res = await questionApi.query(params);
+          setQuestions(res.list);
+          setTotal(res.total);
+          setCurrentPage(1);
+
+          setTimeout(() => {
+            const delayedEl = document.getElementById(`review-item-${lastReadId}`);
+            if (delayedEl) {
+              delayedEl.scrollIntoView({ behavior: "smooth", block: "center" });
+              delayedEl.classList.add("ring-4", "ring-indigo-500", "transition-all", "duration-500");
+              setTimeout(() => {
+                delayedEl.classList.remove("ring-4", "ring-indigo-500");
+              }, 2500);
+            }
+          }, 600);
+        } catch (err: any) {
+          setError(err.message || "自动定位背题标记故障");
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        setError("无法定位到该题目，请点击下方加载更多。");
+        setTimeout(() => setError(""), 4000);
+      }
+    }
+  };
+
   return (
     <Layout>
       <div className="space-y-6">
@@ -200,6 +298,40 @@ export default function ReviewPage() {
             </p>
           </div>
         </div>
+
+        {/* Saved Study Progress Bookmark Alert */}
+        {lastReadId && (
+          <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4 shadow-2xs flex flex-col sm:flex-row items-center justify-between gap-3 animate-fade-in">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-indigo-600 text-white rounded-lg animate-pulse">
+                <Pin className="w-4 h-4" />
+              </div>
+              <div className="space-y-0.5">
+                <span className="text-[10px] font-bold text-indigo-500 uppercase block tracking-wider">上次背题进度 (STUDYING PINPOINT)</span>
+                <span className="text-xs font-semibold text-indigo-950">
+                  发现上次进度：{lastReadCode && <span className="font-mono bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded text-[10px] mr-1.5 font-bold border border-indigo-200">{lastReadCode}</span>}
+                  {lastReadTitle ? (lastReadTitle.length > 28 ? lastReadTitle.slice(0, 28) + "..." : lastReadTitle) : "未知题目"}
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+              <button
+                onClick={handleJumpToLastRead}
+                className="w-full sm:w-auto px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+              >
+                <Pin className="w-3.5 h-3.5" />
+                <span>一键定位到该题</span>
+              </button>
+              <button
+                onClick={handleClearLastRead}
+                className="px-2.5 py-2 text-indigo-600 bg-white border border-indigo-205 hover:bg-indigo-50 text-xs font-semibold rounded-lg transition-all cursor-pointer inline-flex items-center"
+                title="删除上次标记进度"
+              >
+                清除标记
+              </button>
+            </div>
+          </div>
+        )}
 
         {error && (
           <div className="bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 rounded-lg text-xs">
@@ -311,14 +443,29 @@ export default function ReviewPage() {
               else if (q.masteryStatus === "模糊") tagColor = "text-amber-700 bg-amber-50 border-amber-100";
               else if (q.masteryStatus === "未掌握") tagColor = "text-rose-700 bg-rose-50 border-rose-100";
 
+              const isLastRead = q.id === lastReadId;
+
               return (
-                <div key={q.id} className="bg-white rounded-xl border border-neutral-200 hover:border-neutral-300 transition-all p-5 shadow-xs space-y-4 relative">
+                <div 
+                  key={q.id} 
+                  id={`review-item-${q.id}`}
+                  className={`bg-white rounded-xl border transition-all p-5 shadow-xs space-y-4 relative ${
+                    isLastRead 
+                      ? "border-indigo-500 shadow-md ring-2 ring-indigo-500/15" 
+                      : "border-neutral-200 hover:border-neutral-300"
+                  }`}
+                >
                   {/* Top categorization */}
                   <div className="flex flex-wrap items-center justify-between gap-2.5 pb-2.5 border-b border-neutral-100">
                     <div className="flex items-center gap-1.5 text-[10.5px]">
                       <span className="font-mono text-[10px] bg-neutral-100 border font-bold text-neutral-500 px-1.5 rounded-sm">
                         {q.questionId}
                       </span>
+                      {isLastRead && (
+                        <span className="text-[9px] bg-indigo-600 text-white font-bold px-1.5 py-0.5 rounded-xs flex items-center gap-1 shadow-2xs">
+                          <Pin className="w-2.5 h-2.5 animate-bounce fill-white text-[9px]" /> 上次背到这
+                        </span>
+                      )}
                       <span className="text-[10px] font-semibold text-neutral-700 bg-stone-50 px-1.5 py-0.5 rounded border">
                         {q.primaryCategory}
                       </span>
@@ -393,7 +540,20 @@ export default function ReviewPage() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                     <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => handleSetLastRead(q)}
+                        className={`p-1.5 rounded-md border flex items-center gap-1.5 transition-all ${
+                          isLastRead
+                            ? "bg-indigo-600 text-white border-indigo-600 font-bold"
+                            : "bg-white text-neutral-400 hover:text-indigo-600 border-neutral-200 hover:bg-neutral-50"
+                        }`}
+                        title={isLastRead ? "当前背到这里" : "标记此处为背题进度点"}
+                      >
+                        <Pin className={`w-3.5 h-3.5 ${isLastRead ? "fill-white" : ""}`} />
+                        <span className="text-[10px] font-semibold">{isLastRead ? "已记进度" : "记进度"}</span>
+                      </button>
+
                       <button
                         onClick={() => handleToggleFavorite(q)}
                         className={`p-1.5 rounded-md border flex items-center gap-1 ${
