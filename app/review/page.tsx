@@ -243,42 +243,51 @@ export default function ReviewPage() {
         el.classList.remove("ring-4", "ring-indigo-500");
       }, 2500);
     } else {
-      // 2. Element is not present, probably due to pagination. Let's filter by item code automatically!
-      if (lastReadCode) {
-        setKeyword(lastReadCode);
-        setError(`【提醒】位置标记对应题目暂未在前部载入，系统已自动输入编号「${lastReadCode}」检索并展现！`);
-        setTimeout(() => setError(""), 6005);
+      // 2. Element is not present. Instantly calculate index and load up to target page from database directly!
+      try {
+        setLoadingMore(true);
+        setError("正在秒级索引并加载进度题目，请稍候...");
 
-        try {
-          setLoading(true);
-          const params: QuestionQueryParams = {
-            page: 1,
-            pageSize: 40,
-            keyword: lastReadCode,
-          };
-          const res = await questionApi.query(params);
+        const params: QuestionQueryParams = {
+          page: 1,
+          pageSize: 40,
+          keyword: keyword.trim() || undefined,
+          questionBankId: selectedBankId || undefined,
+          primaryCategory: primaryCategory.trim() || undefined,
+          difficulty: difficulty || undefined,
+          masteryStatus: masteryStatus || undefined,
+          targetQuestionId: lastReadId,
+        };
+
+        const res = await questionApi.query(params);
+        if (res.list && res.list.length > 0) {
           setQuestions(res.list);
           setTotal(res.total);
-          setCurrentPage(1);
+          // Set current page accurately to match standard progressive loading sequence
+          const pageReached = res.page || Math.ceil(res.list.length / 40);
+          setCurrentPage(pageReached);
+          setError("");
+          setMessage("瞬间定位成功！已无缝拼接后续题目，您可以继续往后滚动背诵。");
+          setTimeout(() => setMessage(""), 3500);
 
           setTimeout(() => {
-            const delayedEl = document.getElementById(`review-item-${lastReadId}`);
-            if (delayedEl) {
-              delayedEl.scrollIntoView({ behavior: "smooth", block: "center" });
-              delayedEl.classList.add("ring-4", "ring-indigo-500", "transition-all", "duration-500");
+            const destEl = document.getElementById(`review-item-${lastReadId}`);
+            if (destEl) {
+              destEl.scrollIntoView({ behavior: "smooth", block: "center" });
+              destEl.classList.add("ring-2", "ring-indigo-500", "ring-offset-2", "transition-all", "duration-500");
               setTimeout(() => {
-                delayedEl.classList.remove("ring-4", "ring-indigo-500");
-              }, 2500);
+                destEl.classList.remove("ring-2", "ring-indigo-500", "ring-offset-2");
+              }, 3000);
             }
-          }, 600);
-        } catch (err: any) {
-          setError(err.message || "自动定位背题标记故障");
-        } finally {
-          setLoading(false);
+          }, 300);
+        } else {
+          setError("未搜索到对应题目进度点。您可以恢复/清空筛选条件后再次点击一键定位。");
+          setTimeout(() => setError(""), 5050);
         }
-      } else {
-        setError("无法定位到该题目，请点击下方加载更多。");
-        setTimeout(() => setError(""), 4000);
+      } catch (err: any) {
+        setError(err.message || "瞬间定位背题标记故障");
+      } finally {
+        setLoadingMore(false);
       }
     }
   };
@@ -360,11 +369,53 @@ export default function ReviewPage() {
             </div>
             <button
               type="submit"
-              className="px-4 py-2 bg-neutral-950 text-white hover:bg-neutral-800 text-xs font-semibold rounded-lg shrink-0"
+              className="px-4 py-2 bg-neutral-950 text-white hover:bg-neutral-800 text-xs font-semibold rounded-lg shrink-0 cursor-pointer"
             >
               检索
             </button>
           </form>
+
+          {/* Quick Clear Hint when Pinpoint keyword is loaded */}
+          {keyword.trim() !== "" && (
+            <div className="text-[11px] text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 animate-fade-in">
+              <div className="flex items-center gap-1.5 font-medium">
+                <span className="w-2 h-2 rounded-full bg-indigo-500 shrink-0"></span>
+                <span>当前处于筛选/定位状态【{keyword}】下。如需继续背其他题目，您可以清除此关键字以恢复完整列表。</span>
+              </div>
+              <button 
+                type="button" 
+                onClick={async () => {
+                  setKeyword("");
+                  // Trigger reload immediately
+                  setTimeout(async () => {
+                    setLoading(true);
+                    setError("");
+                    setCurrentPage(1);
+                    try {
+                      const params: QuestionQueryParams = {
+                        page: 1,
+                        pageSize: 40,
+                        questionBankId: selectedBankId || undefined,
+                        primaryCategory: primaryCategory.trim() || undefined,
+                        difficulty: difficulty || undefined,
+                        masteryStatus: masteryStatus || undefined,
+                      };
+                      const res = await questionApi.query(params);
+                      setQuestions(res.list);
+                      setTotal(res.total);
+                    } catch (e: any) {
+                      setError(e.message || "恢复全部内容失败");
+                    } finally {
+                      setLoading(false);
+                    }
+                  }, 0);
+                }}
+                className="text-indigo-600 hover:text-indigo-800 font-bold underline text-[11px] shrink-0 active:scale-95 transition-transform cursor-pointer"
+              >
+                清除筛选，拼装完整题库并滚动
+              </button>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs pt-2 border-t border-neutral-100">
             <div className="space-y-1">

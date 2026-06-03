@@ -18,6 +18,7 @@ export async function GET(req: NextRequest) {
     const isFavorite = searchParams.get("isFavorite");
     const isAnswerMissing = searchParams.get("isAnswerMissing");
     const hasWrong = searchParams.get("hasWrong");
+    const targetQuestionIdStr = searchParams.get("targetQuestionId");
 
     const skip = (page - 1) * pageSize;
 
@@ -81,10 +82,39 @@ export async function GET(req: NextRequest) {
 
     if (keyword) {
       where.OR = [
-        { title: { contains: keyword } },
-        { answer: { contains: keyword } },
-        { tags: { contains: keyword } },
+        { questionId: { contains: keyword, mode: "insensitive" } },
+        { title: { contains: keyword, mode: "insensitive" } },
+        { answer: { contains: keyword, mode: "insensitive" } },
+        { tags: { contains: keyword, mode: "insensitive" } },
       ];
+    }
+
+    let finalSkip = skip;
+    let finalTake = pageSize;
+    let finalPage = page;
+
+    if (targetQuestionIdStr) {
+      const targetQuestionId = parseInt(targetQuestionIdStr, 10);
+      if (!isNaN(targetQuestionId)) {
+        const targetExist = await prisma.question.findFirst({
+          where: {
+            ...where,
+            id: targetQuestionId,
+          },
+        });
+        if (targetExist) {
+          const countBefore = await prisma.question.count({
+            where: {
+              ...where,
+              id: { lt: targetQuestionId },
+            },
+          });
+          const targetPage = Math.floor(countBefore / pageSize) + 1;
+          finalSkip = 0;
+          finalTake = targetPage * pageSize;
+          finalPage = targetPage;
+        }
+      }
     }
 
     // Retrieve active counts & list items
@@ -93,8 +123,8 @@ export async function GET(req: NextRequest) {
       prisma.question.findMany({
         where,
         orderBy: [{ id: "asc" }],
-        skip,
-        take: pageSize,
+        skip: finalSkip,
+        take: finalTake,
         include: {
           questionBank: {
             select: { name: true },
@@ -106,7 +136,7 @@ export async function GET(req: NextRequest) {
     return successResponse({
       list,
       total,
-      page,
+      page: finalPage,
       pageSize,
     });
   } catch (err: any) {

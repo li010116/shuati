@@ -40,6 +40,7 @@ export interface QuestionQueryParams {
   isFavorite?: string;
   isAnswerMissing?: string;
   hasWrong?: string;
+  targetQuestionId?: number;
 }
 
 export interface QuestionListResponse {
